@@ -16,6 +16,8 @@ categories = ["multimedia::audio"]
 # features are additive and could never subtract it.
 default = ["load-dynamic"]
 load-dynamic = ["ort/load-dynamic", "dep:libloading"]
+# Local CPU experiment; requires an ONNX Runtime build with OpenVINO support.
+experimental-openvino = ["load-dynamic"]
 
 [dependencies]
 rustfft = "6"
