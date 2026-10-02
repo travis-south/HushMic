@@ -1021,9 +1021,9 @@ mod tests {
             m.history_since(Instant::now(), 138, began, &mut out),
             MeterState::Flowing
         );
-        // Less the margin: 100 ms, two columns.
-        assert_eq!(MARK_MARGIN_MS, 100);
-        assert_eq!(out.len(), 18, "the second since the mark");
+        // Less the margin: 120 ms, into a third column.
+        assert_eq!(MARK_MARGIN_MS, 120);
+        assert_eq!(out.len(), 17, "the second since the mark");
         assert!(out.iter().all(|c| c.complete && c.input_peak == 0.8));
         // A mark mid-column: that column is not whole after it, so it goes.
         let mut m = EngineMeter::new();

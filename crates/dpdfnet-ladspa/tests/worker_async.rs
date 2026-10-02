@@ -300,7 +300,7 @@ fn ramp_alignment_is_exact_at_every_quantum() {
 
 #[test]
 fn a_long_stall_substitutes_silence_then_realigns_exactly() {
-    // One hop stalls for ten callbacks, far beyond the 30 ms total cushion.
+    // One hop stalls for ten callbacks, far beyond the 50 ms total cushion.
     // A 480-sample callback every 10 ms, but the stall is counted in
     // callbacks, not slept: hop 20 is held until the driver is ten cycles
     // past it, so however slow the box, the output runs dry meanwhile.
@@ -329,7 +329,7 @@ fn a_long_stall_substitutes_silence_then_realigns_exactly() {
     let zeros = d.out[OUTPUT_LEAD..].iter().filter(|&&v| v == 0.0).count();
     assert!(
         zeros > 0,
-        "a stall of ten callbacks must overrun the 30 ms cushion"
+        "a stall of ten callbacks must overrun the 50 ms cushion"
     );
     assert!(
         d.out[d.out.len() - 4 * 480..].iter().all(|&v| v != 0.0),

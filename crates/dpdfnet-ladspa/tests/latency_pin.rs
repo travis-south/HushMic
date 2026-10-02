@@ -4,7 +4,7 @@
 //! (latency-aligned raw), same as the engine crate's own latency tests.
 //!
 //! Timing note: cycles are paced at real time (10 ms per 480-sample
-//! callback). A worker late by more than the 20 ms headroom gets silence
+//! callback). A worker late by more than the 40 ms headroom gets silence
 //! substituted and its late audio dropped (the latency holds, the sound
 //! goes), which a fresh instance on a CPU-limited box does while it starts.
 //! So the impulse goes in only once the plugin streams (a faint mark comes

@@ -176,7 +176,7 @@ hushmic service install|uninstall   see headless.md
 What `status` shows:
 
 - `engine:` is what the chain runs right now: `quality model`, `light model` or `passthrough`, followed by the inference engine, for example `quality model (native w7a8 avx2)`.
-- `tray:` is `registered`, `waiting` (no tray on the desktop yet; retried) or `disabled` (`--headless` or `tray = false`), the same words as in `watch`. Under CPU pressure HushMic falls back to the light model or to unfiltered audio and climbs back later, see [troubleshooting.md](troubleshooting.md#latency-and-cpu).
+- `tray:` is `registered`, `waiting` (no tray on the desktop yet; retried) or `disabled` (`--headless` or `tray = false`), the same words as in `watch`. Under CPU pressure HushMic falls back to the light model and climbs back later; automatic fallback never selects unfiltered audio, see [troubleshooting.md](troubleshooting.md#latency-and-cpu).
 - `mic:` names the microphones as the window does: `Built-in Audio (fallback; Jabra Evolve2 is unplugged)`.
 - `chain:` reads `running, idle (not processing audio right now)` while PipeWire has paused the filter chain because nothing is reading from it, and `running, not linked (no microphone is connected to it)` when no microphone has reached it for 5 seconds.
 - `model:` and `strength:` show the settings in effect and whose they are, for example `strength: 100 dB (RODE NT-USB profile)` or `(defaults)`.

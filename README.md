@@ -116,7 +116,7 @@ Three clips are not a formal benchmark, but the source audio is public. Method, 
 
 **Does turning it off or muting drop my call?** No. Your call app keeps the same microphone, so the call stays connected.
 
-**How much latency and CPU?** 80 ms, and about a tenth of one CPU core on most Intel and AMD CPUs since 2015. When the computer gets busy, HushMic switches to a lighter model on its own.
+**How much latency and CPU?** 100 ms, and about a tenth of one CPU core on most Intel and AMD CPUs since 2015. When the computer gets busy, HushMic switches to a lighter model on its own.
 
 **Can I script it?** Yes. `hushmic toggle mute`, `hushmic mode off` or `hushmic clean talk.m4a` work from any hotkey tool or script, and it runs [as a service](docs/headless.md) without a tray icon. Every command: [docs/usage.md](docs/usage.md).
 

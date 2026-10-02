@@ -696,10 +696,10 @@ context.properties = {{
 /// The chain's algorithmic latency in samples at 48 kHz: 2400 engine
 /// latency (480 STFT framing + 1920 model group delay — MEASURED: the
 /// hushmic-denoiser latency tests push impulses and real speech through
-/// the actual DSP and pin it exactly) + 1440 async output lead (one
-/// pinned 480-sample quantum + 960 samples / 20 ms of worker stall
+/// the actual DSP and pin it exactly) + 2400 async output lead (one
+/// pinned 480-sample quantum + 1920 samples / 40 ms of worker stall
 /// headroom, since inference runs on its own thread — issue #10)
-/// = 3840 = 80 ms. The plugin pins the same figure as
+/// = 4800 = 100 ms. The plugin pins the same figure as
 /// PLUGIN_LATENCY_SAMPLES (crates/dpdfnet-ladspa/src/align.rs) and its
 /// asset-gated test measures the whole plugin end to end; change either
 /// side and a test forces this constant to be re-derived. PipeWire adds
@@ -844,7 +844,7 @@ pub enum Applied {
     Restarted,
 }
 
-pub const LATENCY_SAMPLES: u32 = 3840;
+pub const LATENCY_SAMPLES: u32 = 4800;
 
 /// The graph quantum the chain pins while it runs (issue #10). With
 /// inference decoupled onto a worker thread the RT callback is a memcpy
@@ -942,7 +942,7 @@ pub fn spawn_chain(paths: &Paths, spec: &SpawnSpec) -> std::io::Result<SpawnedCh
     }
     // The light model is the plugin's fallback tier under CPU pressure
     // (issue #14); a chain already on it, or a stripped install, gets no
-    // fallback model and the plugin degrades to raw audio instead.
+    // fallback model and the plugin keeps the selected model.
     let light = paths.model_dir.join(format!("{LIGHT_MODEL}.onnx"));
     if spec.model_id != LIGHT_MODEL && light.exists() {
         command.env("HUSHMIC_FALLBACK_MODEL_PATH", &light);

@@ -2695,7 +2695,7 @@ mod tests {
         let second_ago = || Some(at.get() - 1000);
         let near_20 = |pages: &crate::pages::Pages| {
             let n = pages.live.history_taken;
-            assert!((18..=21).contains(&n), "{n} columns");
+            assert!((17..=21).contains(&n), "{n} columns");
         };
         // opened mid-call
         sound(&mut writer);
