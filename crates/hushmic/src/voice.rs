@@ -22,10 +22,7 @@ impl Read for CaptureRead {
     fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
         loop {
             if self.cancel.load(Ordering::Acquire) {
-                return Err(io::Error::new(
-                    io::ErrorKind::Interrupted,
-                    "Enrollment canceled",
-                ));
+                return Err(io::Error::other("Enrollment canceled"));
             }
             if Instant::now() >= self.deadline {
                 return Err(io::Error::new(
@@ -261,7 +258,7 @@ impl eframe::App for VoiceApp {
                 if ui.button("Cancel enrollment").clicked() { cancel.store(true, Ordering::Release); self.message = "Canceled. Previous reference retained.".into(); }
             }
             let mut enabled = self.requested;
-            if ui.add_enabled(!busy && self.enrolled, egui::Checkbox::new(&mut enabled, "Enable pause protection")).changed() { self.request(if enabled { "enable" } else { "disable" }); }
+            if ui.add_enabled(!busy && (self.enrolled || self.requested), egui::Checkbox::new(&mut enabled, "Enable pause protection")).changed() { self.request(if enabled { "enable" } else { "disable" }); }
             if ui.add_enabled(!busy && self.enrolled, egui::Button::new("Forget voice")).clicked() { self.request("forget"); }
             ui.add_space(10.0);
             ui.label(&self.message);
@@ -312,14 +309,21 @@ mod tests {
             cancel: flag.clone(),
             deadline: Instant::now() + Duration::from_secs(1),
         };
-        assert_eq!(
-            reader.read(&mut [0; 4]).unwrap_err().kind(),
-            io::ErrorKind::Interrupted
-        );
+        // Header parsing uses read_exact, which retries Interrupted forever.
+        // Exercise cancellation before any bytes and within both header reads.
+        for prefix in [b"".as_slice(), b"RI", b"RIFF"] {
+            assert_eq!(
+                stream::read_header(&mut prefix.chain(&mut reader))
+                    .err()
+                    .unwrap()
+                    .kind(),
+                io::ErrorKind::Other
+            );
+        }
         flag.store(false, Ordering::Release);
         reader.deadline = Instant::now();
         assert_eq!(
-            reader.read(&mut [0; 4]).unwrap_err().kind(),
+            stream::read_header(&mut reader).err().unwrap().kind(),
             io::ErrorKind::TimedOut
         );
         child.kill().unwrap();
