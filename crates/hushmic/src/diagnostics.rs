@@ -23,6 +23,9 @@ pub struct Report {
     pub pw_target_object: bool,
     pub config_path: String,
     pub enabled: bool,
+    pub protection_requested: bool,
+    pub protection: Option<Protection>,
+    pub processing_latency: Option<u32>,
     pub preferred_mic: Option<String>,
     pub active_mic: Option<String>,
     /// The model and strength in effect (the active profile's, see
@@ -134,6 +137,17 @@ pub fn collect() -> Report {
         pw_target_object: crate::pipewire::supports_target_object(),
         config_path: crate::config::Config::path().display().to_string(),
         enabled: cfg.enabled,
+        protection_requested: cfg.pause_protection,
+        processing_latency: log.as_deref().and_then(|s| {
+            s.lines()
+                .rev()
+                .find_map(|l| parse_latency_line(l.as_bytes()))
+        }),
+        protection: log.as_deref().and_then(|s| {
+            s.lines()
+                .filter_map(|l| parse_protection_line(l.as_bytes()))
+                .next_back()
+        }),
         preferred_mic: cfg.mic.clone(),
         active_mic: crate::pipewire::resolve_effective_mic(cfg.mic.as_deref(), snapshot.as_deref()),
         model: profile.model.clone(),
@@ -277,6 +291,34 @@ pub fn render(r: &Report) -> (String, usize) {
         false,
         format!("  inference: {}", r.inference_setting),
     );
+    let protection = if !r.protection_requested {
+        Protection::disabled()
+    } else if !r.instance_running || r.hushmic_present != Some(true) {
+        Protection {
+            state: "inactive".into(),
+            reason: Some("chain not running".into()),
+        }
+    } else {
+        r.protection.clone().unwrap_or(Protection {
+            state: "unavailable".into(),
+            reason: Some("detector has not reported".into()),
+        })
+    };
+    line(
+        &mut out,
+        false,
+        format!(
+            "protection: {}{} (requested: {})",
+            protection.state,
+            protection
+                .reason
+                .as_ref()
+                .map(|reason| format!(" ({reason})"))
+                .unwrap_or_default(),
+            r.protection_requested
+        ),
+    );
+
     line(
         &mut out,
         false,
@@ -286,14 +328,22 @@ pub fn render(r: &Report) -> (String, usize) {
         ),
     );
     {
-        use crate::controller::LATENCY_SAMPLES;
+        let quantum = r
+            .forced_quantum
+            .unwrap_or(crate::controller::PINNED_QUANTUM);
+        let declared =
+            if r.protection_requested && crate::controller::protection_quantum_supported(quantum) {
+                crate::controller::protection_latency_samples(quantum) as u32
+            } else {
+                crate::controller::LATENCY_SAMPLES
+            };
         line(
             &mut out,
             false,
             format!(
                 "chain latency: {} ms ({} samples @ 48 kHz)",
-                LATENCY_SAMPLES * 1000 / 48_000,
-                LATENCY_SAMPLES
+                declared * 1000 / 48_000,
+                declared
             ),
         );
         // The read-back is a verdict only when there is a chain to ask on
@@ -308,12 +358,10 @@ pub fn render(r: &Report) -> (String, usize) {
             )
         } else {
             match r.latency_reported {
-                Some(n) if n == LATENCY_SAMPLES => {
-                    (false, format!("  reported to PipeWire: yes ({n})"))
-                }
+                Some(n) if n == declared => (false, format!("  reported to PipeWire: yes ({n})")),
                 Some(n) => (
                     true,
-                    format!("  reported to PipeWire: mismatch ({n}, declared {LATENCY_SAMPLES})"),
+                    format!("  reported to PipeWire: mismatch ({n}, declared {declared})"),
                 ),
                 None => (
                     true,
@@ -324,6 +372,18 @@ pub fn render(r: &Report) -> (String, usize) {
         line(&mut out, bad, s);
     }
     // Issue #10: the chain must pin the graph quantum — the async DSP's
+    if r.instance_running && r.hushmic_present == Some(true) {
+        if let Some(latency) = r.processing_latency {
+            line(
+                &mut out,
+                r.protection_requested && latency > 9600,
+                format!(
+                    "actual processing latency: {:.1} ms ({latency} samples)",
+                    latency as f64 / 48.0
+                ),
+            );
+        }
+    }
     // output margin and the declared latency are sized for exactly the
     // pinned value. Judged only for a visible chain.
     {
@@ -741,6 +801,84 @@ pub fn parse_inference_line(line: &[u8]) -> Option<Inference> {
 /// The running chain's inference lines, one per model, stamped with the
 /// generation that reported them (the same generations as the tier: a
 /// retired chain's entries are simply never read again).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Protection {
+    pub state: String,
+    pub reason: Option<String>,
+}
+impl Protection {
+    pub fn disabled() -> Self {
+        Self {
+            state: "disabled".into(),
+            reason: None,
+        }
+    }
+}
+static PROCESSING_LATENCY: std::sync::Mutex<(u64, Option<u32>)> = std::sync::Mutex::new((0, None));
+pub fn parse_latency_line(line: &[u8]) -> Option<u32> {
+    let text = std::str::from_utf8(line).ok()?;
+    let value = text
+        .rsplit_once("[dpdfnet-ladspa] latency: ")?
+        .1
+        .trim_end()
+        .parse::<u32>()
+        .ok()?;
+    (value > 0).then_some(value)
+}
+pub fn processing_latency() -> Option<u32> {
+    let report = PROCESSING_LATENCY.lock().unwrap_or_else(|e| e.into_inner());
+    (report.0 == current_generation())
+        .then_some(report.1)
+        .flatten()
+}
+static PROTECTION: std::sync::Mutex<(u64, Option<Protection>)> = std::sync::Mutex::new((0, None));
+pub fn parse_protection_line(line: &[u8]) -> Option<Protection> {
+    let text = std::str::from_utf8(line).ok()?;
+    let rest = text
+        .rsplit_once("[dpdfnet-ladspa] protection: ")?
+        .1
+        .trim_end();
+    let (state, reason) = match rest.split_once(" (") {
+        Some((state, reason)) => (state, Some(reason.strip_suffix(')')?.to_string())),
+        None => (rest, None),
+    };
+    if !["active", "disabled", "unavailable", "inactive"].contains(&state) {
+        return None;
+    }
+    Some(Protection {
+        state: state.into(),
+        reason,
+    })
+}
+pub fn protection(requested: bool, running: bool, mode: crate::controller::RunMode) -> Protection {
+    if !requested {
+        return Protection::disabled();
+    }
+    if !running || mode != crate::controller::RunMode::Suppress {
+        return Protection {
+            state: "inactive".into(),
+            reason: Some(
+                if running {
+                    "bypass or mute"
+                } else {
+                    "chain not running"
+                }
+                .into(),
+            ),
+        };
+    }
+    let report = PROTECTION.lock().unwrap_or_else(|e| e.into_inner());
+    if report.0 == current_generation() {
+        if let Some(p) = &report.1 {
+            return p.clone();
+        }
+    }
+    Protection {
+        state: "unavailable".into(),
+        reason: Some("waiting for detector status".into()),
+    }
+}
+
 static INFERENCE: std::sync::Mutex<(u64, Vec<Inference>)> = std::sync::Mutex::new((0, Vec::new()));
 
 fn current_generation() -> u64 {
@@ -818,6 +956,18 @@ fn tee_with_cap(
             if let Some(t) = parse_engine_line(&line) {
                 store_engine_tier(generation, t);
             }
+            if let Some(latency) = parse_latency_line(&line) {
+                let mut report = PROCESSING_LATENCY.lock().unwrap_or_else(|e| e.into_inner());
+                if generation == current_generation() {
+                    *report = (generation, Some(latency));
+                }
+            }
+            if let Some(p) = parse_protection_line(&line) {
+                let mut report = PROTECTION.lock().unwrap_or_else(|e| e.into_inner());
+                if generation == current_generation() {
+                    *report = (generation, Some(p));
+                }
+            }
             if let Some(i) = parse_inference_line(&line) {
                 store_inference(generation, i);
             }
@@ -864,6 +1014,9 @@ mod tests {
             pw_target_object: true,
             config_path: "/home/u/.config/hushmic/config.toml".into(),
             enabled: true,
+            protection_requested: false,
+            processing_latency: None,
+            protection: None,
             preferred_mic: None,
             active_mic: None,
             model: "dpdfnet8_48khz_hr".into(),

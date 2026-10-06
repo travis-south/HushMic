@@ -22,6 +22,10 @@ pub enum TrayCmd {
     SetDefaultToggle(bool),
     SetAutostart(bool),
     TestMic,
+    VoiceSetup,
+    SetProtection(bool),
+    ReloadReference,
+    ForgetReference,
     /// Open the compositor's shortcut-binding dialog (portal BindShortcuts).
     SetupShortcuts,
     About,
@@ -465,6 +469,14 @@ impl Tray for HushMicTray {
                     ..Default::default()
                 }
                 .into()],
+                ..Default::default()
+            }
+            .into(),
+            StandardItem {
+                label: "Voice setup… (experimental)".into(),
+                activate: Box::new(|t: &mut Self| {
+                    let _ = t.cmd_tx.send(TrayCmd::VoiceSetup);
+                }),
                 ..Default::default()
             }
             .into(),
@@ -1223,6 +1235,7 @@ mod tests {
                     "Microphone",
                     "Model",
                     "Suppression strength",
+                    "Voice setup… (experimental)",
                     "Set as default microphone",
                     "Set up shortcuts…",
                 ],

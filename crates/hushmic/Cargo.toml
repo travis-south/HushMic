@@ -12,6 +12,7 @@ name = "hushmic"
 path = "src/main.rs"
 
 [dependencies]
+hushmic-denoiser = { path = "../hushmic-denoiser", version = "0.10.1" }
 ksni = { version = "0.3", features = ["blocking"] }
 # Same backend ksni already pulls in (feature-matched: tokio, no async-io
 # stack), used directly for org.freedesktop.Notifications — desktop
@@ -83,6 +84,9 @@ assets = [
   ["../../assets/lib/libonnxruntime.so", "usr/lib/hushmic/", "644"],
   ["../../assets/models/dpdfnet8_48khz_hr.onnx", "usr/share/hushmic/models/", "644"],
   ["../../assets/models/dpdfnet2_48khz_hr.onnx", "usr/share/hushmic/models/", "644"],
+  ["../../assets/models/voice-reference-encoder.onnx", "usr/share/hushmic/models/", "644"],
+  ["../../assets/models/voice-presence-int8.onnx", "usr/share/hushmic/models/", "644"],
+  ["../../assets/models/Lingometer-LICENSE", "usr/share/doc/hushmic/", "644"],
   # Native engine weights (issue #18), beside the models they belong to.
   ["../../assets/models/dpdfnet8_48khz_hr.weights.f32", "usr/share/hushmic/models/", "644"],
   ["../../assets/models/dpdfnet2_48khz_hr.weights.f32", "usr/share/hushmic/models/", "644"],

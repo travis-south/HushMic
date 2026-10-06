@@ -6,11 +6,25 @@ use std::path::PathBuf;
 use std::process::{Child, Command};
 use std::time::{Duration, Instant};
 
-/// Filesystem locations the controller needs to spawn the filter-chain host.
-///
-/// `plugin_so` is the LADSPA `.so`, `model_dir` holds the `<model>.onnx`
-/// files, and `dylib` is the ONNX Runtime shared object that the plugin
-/// `dlopen`s via the `ORT_DYLIB_PATH` env var.
+/// Protection's processing delay including the graph quantum and worker lead.
+pub fn protection_latency_samples(quantum: u32) -> u64 {
+    let mut a = quantum;
+    let mut b = 480;
+    while b != 0 {
+        let r = a % b;
+        a = b;
+        b = r;
+    }
+    2400 + 4320 + (u64::from(quantum) + 480 - u64::from(a) + 1920).max(2400)
+}
+pub fn protection_quantum_supported(quantum: u32) -> bool {
+    quantum != 0 && protection_latency_samples(quantum) <= 9600
+}
+pub fn latency_samples(protection_requested: bool) -> u32 {
+    LATENCY_SAMPLES + if protection_requested { 4320 } else { 0 }
+}
+
+/// Filesystem locations used to spawn the filter-chain host.
 pub struct Paths {
     pub plugin_so: PathBuf,
     pub model_dir: PathBuf,
@@ -307,6 +321,23 @@ pub fn render_conf(
     mode: RunMode,
     report_latency: bool,
 ) -> String {
+    render_conf_at_latency(
+        cfg,
+        paths,
+        legacy_node_target,
+        mode,
+        report_latency,
+        latency_samples(cfg.pause_protection),
+    )
+}
+fn render_conf_at_latency(
+    cfg: &Config,
+    paths: &Paths,
+    legacy_node_target: bool,
+    mode: RunMode,
+    report_latency: bool,
+    latency: u32,
+) -> String {
     // Pin the chosen mic; otherwise follow the system default capture device.
     // `target.object` is the modern key (PipeWire >= 0.3.64); older PipeWire
     // ignores it, so `legacy_node_target` additionally emits the pre-0.3.64
@@ -336,7 +367,7 @@ pub fn render_conf(
     // propagated latency. Gated: 0.3.48 has no delay builtin at all — the
     // node would kill the chain there — and < 1.6 would ignore the key.
     let (latency_node, links) = if report_latency {
-        let secs = LATENCY_SAMPLES as f64 / 48_000.0;
+        let secs = latency as f64 / 48_000.0;
         (
             format!(
                 "\n          {{ type   = builtin\n            name   = hushmic_latency\n            label  = delay\n            config = {{ \"max-delay\" = 0.001 \"latency\" = {secs} }}\n            control = {{ \"Delay (s)\" = 0.0 }}\n          }}"
@@ -544,6 +575,7 @@ pub struct Controller {
     /// restarts — mic recovery re-enabling the chain must never silently
     /// unmute the mic.
     mode: RunMode,
+    active_latency: u32,
     /// The child's stderr tee; joined in `disable()` so a draining old tee
     /// can never overwrite the engine tier of a freshly spawned chain.
     tee: Option<std::thread::JoinHandle<()>>,
@@ -565,6 +597,7 @@ impl Controller {
             spawned_at: None,
             active_mic: None,
             mode: RunMode::default(),
+            active_latency: LATENCY_SAMPLES,
             tee: None,
             active_profile: None,
             logged_profile: None,
@@ -594,6 +627,10 @@ impl Controller {
     /// running child — the live set-param path (or a restart) does that.
     pub fn set_mode_state(&mut self, mode: RunMode) {
         self.mode = mode;
+    }
+
+    pub fn latency_samples(&self) -> u32 {
+        crate::diagnostics::processing_latency().unwrap_or(self.active_latency)
     }
 
     /// The mic the RUNNING chain was rendered with (None = following the
@@ -798,13 +835,28 @@ impl Controller {
         let legacy = !pipewire::supports_target_object();
         let report_latency = pipewire::supports_latency_report();
         // One adjusted copy carries every effective value (mic + profile).
+        let quantum = pipewire::settings_force_quantum().unwrap_or(PINNED_QUANTUM);
+        let protection_supported = protection_quantum_supported(quantum);
         let adjusted = Config {
+            pause_protection: cfg.pause_protection && protection_supported,
             mic: effective_mic.clone(),
             model: eff_model,
             attn_limit: eff_attn,
             ..cfg.clone()
         };
-        let conf = render_conf(&adjusted, &self.paths, legacy, self.mode, report_latency);
+        let latency = if adjusted.pause_protection {
+            protection_latency_samples(quantum) as u32
+        } else {
+            LATENCY_SAMPLES
+        };
+        let conf = render_conf_at_latency(
+            &adjusted,
+            &self.paths,
+            legacy,
+            self.mode,
+            report_latency,
+            latency,
+        );
         let path = conf_path();
         if let Some(d) = path.parent() {
             std::fs::create_dir_all(d)?;
@@ -815,8 +867,25 @@ impl Controller {
         command
             .arg("-c")
             .arg(&path)
+            .env(
+                "HUSHMIC_VOICE_REQUESTED",
+                if adjusted.pause_protection { "1" } else { "0" },
+            )
+            .env("HUSHMIC_VOICE_REFERENCE", crate::voice::reference_path())
+            .env(
+                "HUSHMIC_VOICE_MODEL_PATH",
+                self.paths.model_dir.join("voice-presence-int8.onnx"),
+            )
             .env("HUSHMIC_MODEL_PATH", &model)
             .env("ORT_DYLIB_PATH", &self.paths.dylib);
+        if cfg.pause_protection && !protection_supported {
+            command.env(
+                "HUSHMIC_VOICE_UNAVAILABLE_REASON",
+                "graph quantum exceeds 200 ms protection budget",
+            );
+        } else {
+            command.env_remove("HUSHMIC_VOICE_UNAVAILABLE_REASON");
+        }
         let inherited = std::env::var_os("HUSHMIC_INFERENCE").is_some_and(|v| !v.is_empty());
         if let Some(word) = plugin_inference(adjusted.inference, inherited) {
             command.env("HUSHMIC_INFERENCE", word);
@@ -890,6 +959,7 @@ impl Controller {
         }
         self.child = Some(child);
         self.spawned_at = Some(Instant::now());
+        self.active_latency = latency;
         self.active_mic = effective_mic;
         self.log_profile(&profile, profile_name);
         self.active_profile = Some(profile);
@@ -1043,6 +1113,7 @@ impl Controller {
             }
         }
         self.spawned_at = None;
+        self.active_latency = LATENCY_SAMPLES;
         self.active_mic = None;
         self.active_profile = None;
         Ok(())

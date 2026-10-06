@@ -108,6 +108,7 @@ for size in $TRAY_SYMBOLIC_DIRS; do
 done
 install -m 644 "$REPO_ROOT/LICENSE-MIT" "$STAGE/LICENSE-MIT"
 install -m 644 "$REPO_ROOT/LICENSE-APACHE" "$STAGE/LICENSE-APACHE"
+install -m 644 "$REPO_ROOT/assets/models/Lingometer-LICENSE" "$STAGE/Lingometer-LICENSE"
 install -m 755 "$REPO_ROOT/scripts/install.sh" "$STAGE/install.sh"
 # root-owned entries: extracting as root must not create files owned by uid 1000
 tar -C "$DIST/.stage" --owner=0 --group=0 --numeric-owner \
@@ -151,6 +152,8 @@ for lib in libxkbcommon-x11.so.0 libxcb-xkb.so.1; do
   install -m 644 "$(readlink -f "$src")" "$APPDIR/usr/lib/$lib"
 done
 install -m 644 "$REPO_ROOT"/assets/models/*.onnx "$APPDIR/usr/share/hushmic/models/"
+install -d -m 755 "$APPDIR/usr/share/licenses/hushmic"
+install -m 644 "$REPO_ROOT/assets/models/Lingometer-LICENSE" "$APPDIR/usr/share/licenses/hushmic/"
 install -m 644 "$REPO_ROOT/assets/models/dpdfnet8_48khz_hr.weights.f32" \
                "$REPO_ROOT/assets/models/dpdfnet2_48khz_hr.weights.f32" \
                "$APPDIR/usr/share/hushmic/models/"

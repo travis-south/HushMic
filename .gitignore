@@ -4,6 +4,8 @@
 
 # Bundled binary assets — provisioned locally via scripts/setup-assets.sh, not tracked in git
 /assets/models/*.onnx
+!/assets/models/voice-reference-encoder.onnx
+!/assets/models/voice-presence-int8.onnx
 /assets/models/*.weights.f32
 /assets/lib/*.so*
 /tests/fixtures/*.wav

@@ -20,3 +20,5 @@ pub mod shortcuts;
 pub mod tray;
 pub mod traylink;
 pub mod watchdog;
+
+pub mod voice;

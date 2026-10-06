@@ -14,6 +14,10 @@ pub enum Request {
         json: bool,
     },
     GetMode,
+    ProtectionStatus,
+    SetProtection(bool),
+    ReloadReference,
+    ForgetReference,
     SetMode(Option<RunMode>),
     Toggle(RunMode), // Bypass or Mute only
     /// Stop the daemon (orderly: the previous default mic is restored).
@@ -34,8 +38,13 @@ pub enum Request {
 /// `Request`. `Err` carries a one-line usage message (CLI exit 1).
 pub fn parse_request(words: &[&str]) -> Result<Request, String> {
     const USAGE: &str = "usage: hushmic status [--json] | mode [suppress|bypass|mute|off] | \
-                         toggle mute|bypass | quit | config [get KEY|set KEY VALUE] [--json]";
+                         toggle mute|bypass | protection status|enable|disable | quit | config [get KEY|set KEY VALUE] [--json]";
     match words {
+        ["protection", "status"] => Ok(Request::ProtectionStatus),
+        ["protection", "enable"] => Ok(Request::SetProtection(true)),
+        ["protection", "disable"] => Ok(Request::SetProtection(false)),
+        ["protection", "reload"] => Ok(Request::ReloadReference),
+        ["protection", "forget"] => Ok(Request::ForgetReference),
         ["status"] => Ok(Request::Status { json: false }),
         ["status", "--json"] => Ok(Request::Status { json: true }),
         ["quit"] => Ok(Request::Quit),
@@ -145,6 +154,9 @@ pub fn update_prev_alive(prev: RunMode, old: Option<RunMode>, new: Option<RunMod
 #[derive(Clone, Debug)]
 pub struct Status {
     pub version: String,
+    pub protection_requested: bool,
+    pub latency_samples: u32,
+    pub protection: crate::diagnostics::Protection,
     pub mode: Option<RunMode>,
     pub mic_configured: Option<String>,
     pub mic_active: Option<String>,
@@ -266,6 +278,16 @@ pub fn render_status_human(s: &Status) -> String {
             .unwrap_or_default(),
         _ => String::new(),
     };
+    let protection = format!(
+        "protection: {}{} (requested: {})\n",
+        s.protection.state,
+        s.protection
+            .reason
+            .as_ref()
+            .map(|r| format!(" ({r})"))
+            .unwrap_or_default(),
+        s.protection_requested
+    );
     format!(
         "hushmic {} — mode: {}\nmic: {}\nmodel: {}  strength: {} dB ({})\n{}latency: {} ms added\ntray: {}\nchain: {}\n",
         s.version,
@@ -277,8 +299,8 @@ pub fn render_status_human(s: &Status) -> String {
             Some(p) => format!("{} profile", s.profile_name.as_deref().unwrap_or(p)),
             None => "defaults".to_string(),
         },
-        engine,
-        crate::controller::LATENCY_SAMPLES * 1000 / 48_000,
+        format_args!("{engine}{protection}"),
+        s.latency_samples * 1000 / 48_000,
         tray_word(s.tray_sni),
         chain
     )
@@ -315,7 +337,8 @@ pub fn render_status_json(s: &Status) -> String {
             "engine": i.engine,
             "reason": i.reason,
         })),
-        "latency_samples": crate::controller::LATENCY_SAMPLES,
+        "latency_samples": s.latency_samples,
+        "protection": { "requested": s.protection_requested, "state": s.protection.state, "reason": s.protection.reason },
         "tray": tray_word(s.tray_sni),
         "chain": {
             "running": s.chain_running,
@@ -717,6 +740,9 @@ mod tests {
 
     fn demo_status() -> Status {
         Status {
+            protection_requested: false,
+            latency_samples: crate::controller::LATENCY_SAMPLES,
+            protection: crate::diagnostics::Protection::disabled(),
             version: "0.5.0".into(),
             mode: Some(RunMode::Mute),
             mic_configured: Some("alsa_input.rode".into()),

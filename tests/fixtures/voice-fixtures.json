@@ -1,0 +1,105 @@
+{
+  "purpose": "Experimental full-plugin real-speaker lifecycle/regression fixture; not a held-out quality certification.",
+  "attribution": "LibriSpeech (c) 2014 Vassil Panayotov; read speech from LibriVox volunteers; CC BY 4.0.",
+  "source_url": "https://www.openslr.org/12/",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "target_id": "5789",
+  "competitor_id": "6272",
+  "samplerate": 48000,
+  "channels": 1,
+  "subtype": "PCM_16",
+  "enrollment": {
+    "seconds": 20,
+    "sources": [
+      {
+        "channels": 1,
+        "file": "data/LibriSpeech/train-clean-5/5789/70653/5789-70653-0000.flac",
+        "raw_sample_range": [
+          0,
+          265440
+        ],
+        "samplerate": 16000,
+        "sha256": "98b34ecb982dff6757fb9fda5cd107a75edff262ab2dae3d8b6159c4a9a00abd",
+        "whole_frames": 265440
+      },
+      {
+        "channels": 1,
+        "file": "data/LibriSpeech/train-clean-5/5789/70653/5789-70653-0002.flac",
+        "raw_sample_range": [
+          0,
+          54560
+        ],
+        "samplerate": 16000,
+        "sha256": "81e71d8dd8962d80a1abb3cbb3c272203efbaf78c5d85a71d1e5464f7ad45ff0",
+        "whole_frames": 238800
+      }
+    ],
+    "processing": "Concatenate independent raw16k prefixes (320000 samples), torchaudio2.9.1+cpu default resample16k->48k, PCM16 FLAC quantization."
+  },
+  "evaluation": {
+    "seconds": 10,
+    "target_file": "data/LibriSpeech/train-clean-5/5789/70653/5789-70653-0001.flac",
+    "competitor_files": [
+      "data/LibriSpeech/train-clean-5/6272/70171/6272-70171-0001.flac",
+      "data/LibriSpeech/train-clean-5/6272/70171/6272-70171-0002.flac",
+      "data/LibriSpeech/train-clean-5/6272/70171/6272-70171-0003.flac"
+    ],
+    "original_file_sha256": {
+      "data/LibriSpeech/train-clean-5/5789/70653/5789-70653-0001.flac": "1a79575951636efe73b5686023a1e62f57f5b5b4b29d96fcfbf76d54c8e03fd3",
+      "data/LibriSpeech/train-clean-5/6272/70171/6272-70171-0001.flac": "2b4b7d6d8d98ed1337b65564d4cad124fd185edb75df59e8dc86239c99ea865c",
+      "data/LibriSpeech/train-clean-5/6272/70171/6272-70171-0002.flac": "b7f73151908aac43bd5232220ef3608c8b7132fe63ebcfa1c1d6cb210529a030",
+      "data/LibriSpeech/train-clean-5/6272/70171/6272-70171-0003.flac": "d9ca132c3824e2fab29d632be710159c8d31b9304470eb3c9373762ac31e971a"
+    },
+    "sealed_source_component_sha256": {
+      "target.f32": "4cf16ce69ea8fbefa7e279dc86a5ecfb7398c372d5581248ed45bbac6ec21551",
+      "competitor.f32": "3effb024e20e7868e07479d39ed6c7704202f4ff3f6a5be27c6d1dbf6e168b50"
+    },
+    "sealed_case": "broader-panel-h20-CAL/5789-6272-equal_volume",
+    "processing": "Preserve sealed equal-volume component gains; concatenate crops below; no new amplitude normalization; PCM16 FLAC quantization.",
+    "segments": [
+      {
+        "seconds": [
+          0,
+          3
+        ],
+        "kind": "target_and_competitor",
+        "source_seconds": [
+          23,
+          26
+        ]
+      },
+      {
+        "seconds": [
+          3,
+          7
+        ],
+        "kind": "competitor_only_target_pause",
+        "source_seconds": [
+          19,
+          23
+        ]
+      },
+      {
+        "seconds": [
+          7,
+          10
+        ],
+        "kind": "target_and_competitor_resumed",
+        "source_seconds": [
+          26,
+          29
+        ]
+      }
+    ],
+    "source_energy_target_onset_seconds": 0.45,
+    "source_exact_zero_target_interval": [
+      3,
+      7
+    ]
+  },
+  "enrollment_evaluation_files_disjoint": true,
+  "fixture_sha256": {
+    "voice-enrollment.flac": "f01cffd7a33fc29a1d9f2f0ac277fc8656c0794abe015ee5cc8dc55351fb6cba",
+    "voice-evaluation.flac": "47eae56040bec3eb63049c03cd2a1634b4ea8f50d37fe768b1b216d4d4606653"
+  }
+}
