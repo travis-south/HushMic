@@ -207,6 +207,18 @@ fi
   ln -sf "libonnxruntime.so.1" "libonnxruntime.so"
 )
 
+# Experimental voice graphs are small, committed assets. Verify rather than download.
+for entry in \
+  "voice-reference-encoder.onnx:a1f9a5a1db57318e2db969ea319e050148db4cd663745af4e75b2bf695a658e7" \
+  "voice-presence-int8.onnx:2b0d4c83be8b773fc53e041f9090b0aefdd4c661865798771ca4226c8005a8bd"; do
+  name="${entry%%:*}"
+  checksum="${entry#*:}"
+  if ! file_ok "$REPO_ROOT/assets/models/$name" "$checksum"; then
+    echo "ERROR: committed experimental voice asset $name is missing or altered." >&2
+    exit 1
+  fi
+done
+
 echo "Assets ready:"
 ls -lh "$REPO_ROOT/assets/models/"
 ls -lh "$REPO_ROOT/assets/lib/"

@@ -157,6 +157,9 @@ pub fn profile_owner<'a>(
 #[serde(default)]
 pub struct Config {
     pub enabled: bool,
+    /// Explicit experimental pause-protection request, independent of mic profiles.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub pause_protection: bool,
     pub mic: Option<String>, // real source node.name; None = use system default
     pub model: String,       // model file stem under /usr/share/hushmic/models
     pub attn_limit: f32,     // dB cap for the plugin control port
@@ -198,6 +201,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             enabled: true,
+            pause_protection: false,
             mic: None,
             model: "dpdfnet8_48khz_hr".into(),
             attn_limit: 100.0,

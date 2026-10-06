@@ -624,6 +624,7 @@ fn usage_text() -> String {
        hushmic --tray          run the system-tray app (no window; autostart)
        hushmic --headless      run without a tray icon or window (systemd unit)
        hushmic --enable-once   enable the mic until terminated (no watchdog, no CLI socket)
+       hushmic --voice-window  open experimental voice setup (recording is explicit)
        hushmic --version       print the version and install paths
        hushmic --doctor        print a diagnostics report (exits 1 on problems)
        hushmic --help          this text
@@ -632,6 +633,7 @@ control (talks to the running instance):
        hushmic status [--json]      what it is doing
        hushmic mode [STATE]         print or set: suppress|bypass|mute|off
        hushmic toggle mute|bypass   hotkey-friendly overlay toggle
+       hushmic protection status|enable|disable
        hushmic quit                 stop it (restores the previous default mic)
 
 settings (applied live while running, saved to the file otherwise):
@@ -659,7 +661,9 @@ fn main() {
     // tray's socket, print, exit. Same SIGPIPE stance as --version.
     if matches!(
         args.first().map(|s| s.as_str()),
-        Some("status" | "mode" | "toggle" | "quit" | "config" | "devices" | "service")
+        Some(
+            "status" | "mode" | "toggle" | "quit" | "protection" | "config" | "devices" | "service"
+        )
     ) {
         use std::io::Write;
         let (code, out) = cli_dispatch(&args);
@@ -684,15 +688,17 @@ fn main() {
     let headless = args.iter().any(|a| a == "--headless");
     let enable_once = args.iter().any(|a| a == "--enable-once");
     let test_window = args.iter().any(|a| a == "--test-window");
+    let voice_window = args.iter().any(|a| a == "--voice-window");
     let about = args.iter().any(|a| a == "--about");
     let version = args.iter().any(|a| a == "--version");
     let doctor = args.iter().any(|a| a == "--doctor");
-    const KNOWN_FLAGS: [&str; 7] = [
+    const KNOWN_FLAGS: [&str; 8] = [
         "--tray",
         "--headless",
         "--enable-once",
         "--test-window",
         "--about",
+        "--voice-window",
         "--version",
         "--doctor",
     ];
@@ -703,6 +709,7 @@ fn main() {
         enable_once,
         test_window,
         about,
+        voice_window,
         version,
         doctor,
     ]
@@ -763,6 +770,28 @@ fn main() {
             }
         }
         std::process::exit(if problems == 0 { 0 } else { 1 });
+    }
+
+    if voice_window {
+        let (mut raw, _) = resolve_ab_nodes();
+        let sources = pipewire::sources_snapshot();
+        if !sources.as_deref().is_some_and(|v| {
+            v.iter()
+                .any(|s| s.name == raw && hushmic::config::can_own_profile(&s.name))
+        }) {
+            let cfg = Config::load();
+            raw = pipewire::resolve_chain_target(
+                cfg.mic.as_deref(),
+                controller::persisted_prior_default().as_deref(),
+            )
+            .profile_device
+            .unwrap_or_default();
+        }
+        if let Err(e) = hushmic::voice::run(raw) {
+            eprintln!("hushmic: voice setup failed: {e}");
+            std::process::exit(1);
+        }
+        return;
     }
 
     if about {
@@ -1164,6 +1193,28 @@ fn main() {
                         let _ = req.reply.send(control::encode_err(&msg));
                         continue;
                     }
+                    Ok(control::Request::ProtectionStatus) => {
+                        let p = hushmic::diagnostics::protection(
+                            cfg.pause_protection,
+                            controller.is_running(),
+                            controller.mode(),
+                        );
+                        let payload = serde_json::json!({ "requested": cfg.pause_protection, "state": p.state, "reason": p.reason, "enrolled": hushmic::voice::reference_path().exists() }).to_string();
+                        let _ = req.reply.send(control::encode_ok(&payload));
+                        continue;
+                    }
+                    Ok(control::Request::SetProtection(value)) => {
+                        control_reply = Some(req.reply);
+                        Event::Cmd(TrayCmd::SetProtection(value))
+                    }
+                    Ok(control::Request::ReloadReference) => {
+                        control_reply = Some(req.reply);
+                        Event::Cmd(TrayCmd::ReloadReference)
+                    }
+                    Ok(control::Request::ForgetReference) => {
+                        control_reply = Some(req.reply);
+                        Event::Cmd(TrayCmd::ForgetReference)
+                    }
                     Ok(control::Request::GetMode) => {
                         let cur = cfg.enabled.then(|| controller.mode());
                         let _ = req.reply.send(control::encode_ok(control::mode_word(cur)));
@@ -1200,6 +1251,13 @@ fn main() {
                             }
                         };
                         let s = control::Status {
+                            protection_requested: cfg.pause_protection,
+                            latency_samples: controller.latency_samples(),
+                            protection: hushmic::diagnostics::protection(
+                                cfg.pause_protection,
+                                controller.is_running(),
+                                controller.mode(),
+                            ),
                             version: env!("CARGO_PKG_VERSION").to_string(),
                             mode: cfg.enabled.then(|| controller.mode()),
                             mic_configured: cfg.mic.clone(),
@@ -1455,6 +1513,9 @@ fn main() {
                                 | TrayCmd::SelectModel(_)
                                 | TrayCmd::SetAttn(_)
                                 | TrayCmd::SetDefaultToggle(_)
+                                | TrayCmd::SetProtection(_)
+                                | TrayCmd::ReloadReference
+                                | TrayCmd::ForgetReference
                         ));
                 if testing && mutates_chain {
                     if let Some(c) = &mictest_cancel {
@@ -1517,6 +1578,37 @@ fn main() {
                             }
                         }
                         prev_alive = control::update_prev_alive(prev_alive, old_sel, sel);
+                    }
+                    TrayCmd::VoiceSetup => match spawn_child_window("--voice-window", &[]) {
+                        Ok(child) => about_windows.push(child),
+                        Err(e) => eprintln!("hushmic: could not open voice setup: {e}"),
+                    },
+                    TrayCmd::SetProtection(value) => {
+                        cfg.pause_protection = value;
+                        if cfg.enabled {
+                            applied = apply(&mut controller, &cfg);
+                        }
+                    }
+                    TrayCmd::ReloadReference => {
+                        if cfg.enabled {
+                            applied = apply(&mut controller, &cfg);
+                        }
+                    }
+                    TrayCmd::ForgetReference => {
+                        cfg.pause_protection = false;
+                        let removal = match std::fs::remove_file(hushmic::voice::reference_path()) {
+                            Ok(()) => Ok(()),
+                            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+                            Err(e) => Err(format!(
+                                "Protection disabled; reference could not be deleted: {e}"
+                            )),
+                        };
+                        if cfg.enabled {
+                            applied = apply(&mut controller, &cfg);
+                        }
+                        if applied.is_ok() {
+                            applied = removal;
+                        }
                     }
                     TrayCmd::SelectMic(m) => {
                         // The restart applies the pick's profile; the
@@ -1656,6 +1748,13 @@ fn main() {
                     // produce a "running again" notice later
                     gate.reset();
                 }
+                if let Err(e) = cfg.save() {
+                    let reason = format!("Could not save settings: {e}");
+                    applied = Err(match applied {
+                        Ok(()) => reason,
+                        Err(prior) => format!("{prior}; {reason}"),
+                    });
+                }
                 // A CLI-originated SetMode gets its answer now that the
                 // outcome is known: the resulting mode word, or the error.
                 if let Some(reply) = control_reply.take() {
@@ -1672,7 +1771,6 @@ fn main() {
                     // capture stream before the next full tick.
                     schedule_early_tick(&tx);
                 }
-                let _ = cfg.save();
                 // reflect updated state + refreshed mic list + status in the tray
                 refresh_tray(
                     &handle,

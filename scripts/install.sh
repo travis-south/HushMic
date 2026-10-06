@@ -417,6 +417,7 @@ done
 refresh_icon_cache
 [ -f "$PAYLOAD/LICENSE-MIT" ] && install_file "$PAYLOAD/LICENSE-MIT" "$DEST_LICENSES" 644
 [ -f "$PAYLOAD/LICENSE-APACHE" ] && install_file "$PAYLOAD/LICENSE-APACHE" "$DEST_LICENSES" 644
+[ -f "$PAYLOAD/Lingometer-LICENSE" ] && install_file "$PAYLOAD/Lingometer-LICENSE" "$DEST_LICENSES" 644
 
 # ---------------------------------------------------------------------------
 # Generate the uninstaller (bakes this prefix).

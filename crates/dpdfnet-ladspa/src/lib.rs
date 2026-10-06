@@ -9,6 +9,7 @@ pub mod align;
 pub mod ladder;
 pub mod log;
 pub mod rt;
+pub mod voice;
 pub mod worker;
 
 pub use adaptive::{AdaptiveEngine, RawDelay};
@@ -277,7 +278,9 @@ impl DpdfnetPlugin {
             init_engine()
         };
         DpdfnetPlugin {
-            worker: engine.and_then(WorkerHandle::spawn),
+            worker: engine
+                .map(voice::ProtectedEngine::new)
+                .and_then(WorkerHandle::spawn),
             aligner: Aligner::new(),
             active: false,
             restarting: false,

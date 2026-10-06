@@ -36,6 +36,10 @@ mod native;
 mod runtime;
 mod stft;
 mod stream;
+#[cfg(unix)]
+pub mod voice;
+#[cfg(unix)]
+mod voice_coefficients;
 
 pub use denoiser::Denoiser;
 pub use error::Error;

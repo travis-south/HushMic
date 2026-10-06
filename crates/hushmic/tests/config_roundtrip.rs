@@ -45,3 +45,16 @@ fn toml_roundtrips() {
     assert_eq!(back.attn_limit, 24.0);
     assert!(back.set_default && back.autostart && !back.enabled);
 }
+
+#[test]
+fn pause_protection_is_explicit_global_and_persistent() {
+    let old: Config = toml::from_str("enabled = true").unwrap();
+    assert!(!old.pause_protection);
+    let mut cfg = old;
+    cfg.pause_protection = true;
+    cfg.apply_mic_selection(Some("physical-mic".into()));
+    let saved = toml::to_string(&cfg).unwrap();
+    let loaded: Config = toml::from_str(&saved).unwrap();
+    assert!(loaded.pause_protection);
+    assert!(loaded.mic_prefs.is_empty());
+}

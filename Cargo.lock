@@ -1473,6 +1473,7 @@ dependencies = [
  "fluent-syntax",
  "futures-util",
  "hound",
+ "hushmic-denoiser",
  "i18n-embed",
  "i18n-embed-fl",
  "ksni",
@@ -1498,6 +1499,7 @@ dependencies = [
  "libloading 0.9.0",
  "ort",
  "rustfft",
+ "serde_json",
  "sha2",
 ]
 

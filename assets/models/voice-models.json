@@ -1,0 +1,44 @@
+{
+  "experimental": true,
+  "quality": "Current stock candidate measured 0.9\u20137.4 dB competitor suppression; no 12 dB guarantee.",
+  "upstream": "https://github.com/junghunl/Lingometer/tree/815c19c0fdf56275cc7bb5dcc0be71e281fe5ab0",
+  "license": "Apache-2.0",
+  "upstream_sha256": {
+    "LICENSE": "5625186693186f3f2e0d1f673e0c75fcc9defc4ff90cc9332d6109abfd39b53a",
+    "personal_VAD/ASPVAD.py": "2f8b5cfa47cbb53204396e808ef4db06a084e83094044e4423094e4e71dbf066",
+    "personal_VAD/models/ckpt_librispeech_spk2338.pt": "91a90898b84b9e7d4090938b5e93eabc9d4cc91e6eb9d3beb81ba208d8e4f9c0"
+  },
+  "evaluated_presence_sha256": "2b0d4c83be8b773fc53e041f9090b0aefdd4c661865798771ca4226c8005a8bd",
+  "versions": {
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "torch": "2.9.1+cpu",
+    "torchaudio": "2.9.1+cpu",
+    "onnx": "1.23.1",
+    "onnxruntime": "1.27.0"
+  },
+  "assets_sha256": {
+    "voice-reference-encoder.onnx": "a1f9a5a1db57318e2db969ea319e050148db4cd663745af4e75b2bf695a658e7",
+    "voice-presence-int8.onnx": "2b0d4c83be8b773fc53e041f9090b0aefdd4c661865798771ca4226c8005a8bd",
+    "voice-frontend-parity.json": "aaf3d92b69a31298911ff043b813b1b8a0cb6dda1fb16b3a9e0cf78475052b35",
+    "Lingometer-LICENSE": "5625186693186f3f2e0d1f673e0c75fcc9defc4ff90cc9332d6109abfd39b53a"
+  },
+  "encoder_input": [
+    1,
+    24,
+    2001
+  ],
+  "encoder_output": [
+    1,
+    40
+  ],
+  "detector_physical_frames": 50,
+  "detector_attention_frames": 20,
+  "reference_normalization": "none",
+  "policy": {
+    "threshold": 0.5,
+    "release_hangover_ms": 160,
+    "maximum_preroll_ms": 70,
+    "minimum_mask_frame_probability": 0.1
+  }
+}

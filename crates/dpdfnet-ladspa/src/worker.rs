@@ -147,6 +147,8 @@ pub trait HopEngine: Send + 'static {
     /// last hop: time the live path spent not producing, which the engine's
     /// cost model would otherwise not see. Default: ignored.
     fn note_pause(&mut self, _pause: Duration) {}
+    /// Largest alignment output lead for this stream, sampled on the worker.
+    fn note_output_lead(&mut self, _samples: usize) {}
 }
 
 impl HopEngine for Denoiser {
@@ -185,6 +187,8 @@ struct Shared {
     /// the raw lag reading alternates; the worker smooths it over one
     /// cycle's worth of hops.
     quantum: AtomicU32,
+    /// Largest alignment lead seen in this stream, even if the worker misses a callback.
+    output_lead: AtomicU32,
     /// The helper requested guard arming. It must wait for rt_ready before
     /// requesting a policy change. The worker checks the actual policy too.
     rt_granted: AtomicBool,
@@ -204,6 +208,7 @@ impl Shared {
             engine_dead: AtomicBool::new(false),
             overflow_report: AtomicBool::new(false),
             quantum: AtomicU32::new(HOP as u32),
+            output_lead: AtomicU32::new(crate::OUTPUT_LEAD as u32),
             rt_granted: AtomicBool::new(false),
             rt_ready: AtomicBool::new(false),
         }
@@ -322,6 +327,10 @@ impl WorkerHandle {
 
     /// RT-safe: record the host's cycle size (samples per `run()`).
     pub fn note_quantum(&self, samples: usize) {
+        self.shared.output_lead.fetch_max(
+            crate::required_lead(samples.min(u32::MAX as usize - 4096)) as u32,
+            Ordering::Release,
+        );
         self.shared
             .quantum
             .store(samples.min(u32::MAX as usize) as u32, Ordering::Release);
@@ -376,6 +385,9 @@ impl WorkerHandle {
     /// then resumes fresh — resynced to now instead of replaying
     /// seconds-stale audio into a live call.
     pub fn request_reset(&mut self) {
+        self.shared
+            .output_lead
+            .store(crate::OUTPUT_LEAD as u32, Ordering::Release);
         self.requested_epoch = self.requested_epoch.wrapping_add(1);
         self.shared
             .reset_epoch
@@ -578,6 +590,7 @@ fn worker_loop(
         let per_cycle = (shared.quantum.load(Ordering::Acquire) as usize)
             .div_ceil(HOP)
             .max(1);
+        engine.note_output_lead(shared.output_lead.load(Ordering::Acquire) as usize);
         engine.set_lag_hops(lag_window.observe(queued, per_cycle));
         for s in hop_in.iter_mut() {
             *s = input.pop().unwrap_or(0.0);
