@@ -1,0 +1,616 @@
+{
+  "date": "2026-10-07",
+  "base_commit": "901b846fa21554b4d625dcf94975878da0ee7490",
+  "scope": "Offline streaming target-speaker extraction prototype; no app switch",
+  "verdict": "EXTRACTION_DEMONSTRATED_CANDIDATE_REJECTED_FOR_LIVE_INTEGRATION",
+  "reasons": [
+    "Extractor CPU exceeds existing 0.8 total-pipeline budget; no sustained real-time headroom",
+    "Independent public readings first-turn target projection magnitude 0.63 and SI-SDR worsens",
+    "Trained-weight redistribution terms unresolved; not packaged",
+    "Combined plugin/worker, 48k adaptation, 200ms latency and word preservation not validated"
+  ],
+  "script_sha256": "d0a650ff10f35de690e7f631098b52404c7e7c7e5be800187eea58984d31b635",
+  "acquisition": {
+    "checkpoint_url": "https://drive.usercontent.google.com/download?id=1M4UqK2A2EeHmQ0pCevYqBgaYn3RvklgC&export=download&confirm=t",
+    "code_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+    "speaker_code_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+    "artifacts": {
+      "pretrained-response": {
+        "bytes": 1048798335,
+        "sha256": "0a7e44050b1235db209181d7cda29ac93487fbb981ec768d3062b3243c49ce98"
+      },
+      "models/spk_emb_causal_100/avg_model.pt": {
+        "bytes": 251856016,
+        "sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3"
+      },
+      "models/spk_emb_causal_100/config.yaml": {
+        "bytes": 2487,
+        "sha256": "80820eb78de6639160f7124d09cbacbc8397e321d8075721e89edb7cec50a0fa"
+      },
+      "models/tfmap_context_causal_100/avg_model.pt": {
+        "bytes": 278268439,
+        "sha256": "97c01b79b0cf1a5b914a4a3bc1113c1864752ebdd320f528e77a53202447fef2"
+      },
+      "models/tfmap_context_causal_100/config.yaml": {
+        "bytes": 2431,
+        "sha256": "786230c34b7f40f4a23eb1dd791d917010e74443a7e8125eee7e9f14fae0224b"
+      }
+    },
+    "weights_license": "No explicit checkpoint redistribution license found in downloaded archive or upstream README; research prototype only."
+  },
+  "kernel_execution": {
+    "executed_kernel_counts": {
+      "Gather": 98,
+      "Split": 35,
+      "Unsqueeze": 98,
+      "Expand": 1,
+      "Transpose": 157,
+      "DynamicQuantizeMatMul": 13,
+      "Slice": 32,
+      "Reshape": 118,
+      "LayerNormalization": 70,
+      "QuantizeLinear": 160,
+      "QLinearConv": 128,
+      "DequantizeLinear": 192,
+      "Concat": 34,
+      "Mul": 167,
+      "DynamicQuantizeLSTM": 12,
+      "Squeeze": 102,
+      "Add": 50,
+      "InstanceNormalization": 6,
+      "Tanh": 64,
+      "Sigmoid": 32,
+      "Sub": 32
+    },
+    "integer_kernels_verified": true
+  },
+  "fixture_manifest": {
+    "purpose": "Experimental full-plugin real-speaker lifecycle/regression fixture; not a held-out quality certification.",
+    "attribution": "LibriSpeech (c) 2014 Vassil Panayotov; read speech from LibriVox volunteers; CC BY 4.0.",
+    "source_url": "https://www.openslr.org/12/",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "target_id": "5789",
+    "competitor_id": "6272",
+    "samplerate": 48000,
+    "channels": 1,
+    "subtype": "PCM_16",
+    "enrollment": {
+      "seconds": 20,
+      "sources": [
+        {
+          "channels": 1,
+          "file": "data/LibriSpeech/train-clean-5/5789/70653/5789-70653-0000.flac",
+          "raw_sample_range": [
+            0,
+            265440
+          ],
+          "samplerate": 16000,
+          "sha256": "98b34ecb982dff6757fb9fda5cd107a75edff262ab2dae3d8b6159c4a9a00abd",
+          "whole_frames": 265440
+        },
+        {
+          "channels": 1,
+          "file": "data/LibriSpeech/train-clean-5/5789/70653/5789-70653-0002.flac",
+          "raw_sample_range": [
+            0,
+            54560
+          ],
+          "samplerate": 16000,
+          "sha256": "81e71d8dd8962d80a1abb3cbb3c272203efbaf78c5d85a71d1e5464f7ad45ff0",
+          "whole_frames": 238800
+        }
+      ],
+      "processing": "Concatenate independent raw16k prefixes (320000 samples), torchaudio2.9.1+cpu default resample16k->48k, PCM16 FLAC quantization."
+    },
+    "evaluation": {
+      "seconds": 10,
+      "target_file": "data/LibriSpeech/train-clean-5/5789/70653/5789-70653-0001.flac",
+      "competitor_files": [
+        "data/LibriSpeech/train-clean-5/6272/70171/6272-70171-0001.flac",
+        "data/LibriSpeech/train-clean-5/6272/70171/6272-70171-0002.flac",
+        "data/LibriSpeech/train-clean-5/6272/70171/6272-70171-0003.flac"
+      ],
+      "original_file_sha256": {
+        "data/LibriSpeech/train-clean-5/5789/70653/5789-70653-0001.flac": "1a79575951636efe73b5686023a1e62f57f5b5b4b29d96fcfbf76d54c8e03fd3",
+        "data/LibriSpeech/train-clean-5/6272/70171/6272-70171-0001.flac": "2b4b7d6d8d98ed1337b65564d4cad124fd185edb75df59e8dc86239c99ea865c",
+        "data/LibriSpeech/train-clean-5/6272/70171/6272-70171-0002.flac": "b7f73151908aac43bd5232220ef3608c8b7132fe63ebcfa1c1d6cb210529a030",
+        "data/LibriSpeech/train-clean-5/6272/70171/6272-70171-0003.flac": "d9ca132c3824e2fab29d632be710159c8d31b9304470eb3c9373762ac31e971a"
+      },
+      "sealed_source_component_sha256": {
+        "target.f32": "4cf16ce69ea8fbefa7e279dc86a5ecfb7398c372d5581248ed45bbac6ec21551",
+        "competitor.f32": "3effb024e20e7868e07479d39ed6c7704202f4ff3f6a5be27c6d1dbf6e168b50"
+      },
+      "sealed_case": "broader-panel-h20-CAL/5789-6272-equal_volume",
+      "processing": "Preserve sealed equal-volume component gains; concatenate crops below; no new amplitude normalization; PCM16 FLAC quantization.",
+      "segments": [
+        {
+          "seconds": [
+            0,
+            3
+          ],
+          "kind": "target_and_competitor",
+          "source_seconds": [
+            23,
+            26
+          ]
+        },
+        {
+          "seconds": [
+            3,
+            7
+          ],
+          "kind": "competitor_only_target_pause",
+          "source_seconds": [
+            19,
+            23
+          ]
+        },
+        {
+          "seconds": [
+            7,
+            10
+          ],
+          "kind": "target_and_competitor_resumed",
+          "source_seconds": [
+            26,
+            29
+          ]
+        }
+      ],
+      "source_energy_target_onset_seconds": 0.45,
+      "source_exact_zero_target_interval": [
+        3,
+        7
+      ]
+    },
+    "enrollment_evaluation_files_disjoint": true,
+    "fixture_sha256": {
+      "voice-enrollment.flac": "f01cffd7a33fc29a1d9f2f0ac277fc8656c0794abe015ee5cc8dc55351fb6cba",
+      "voice-evaluation.flac": "47eae56040bec3eb63049c03cd2a1634b4ea8f50d37fe768b1b216d4d4606653"
+    }
+  },
+  "public_fixture": {
+    "purpose": "Independent LibriVox readings outside the candidate Libri2Mix training source; ten-second screen, not call acceptance",
+    "enrollment": "target/voice-reference-evaluation/enrollment.wav",
+    "source_ranges_seconds": [
+      [
+        3,
+        6
+      ],
+      [
+        13.5,
+        17.5
+      ],
+      [
+        8.5,
+        11.5
+      ]
+    ],
+    "source_manifest": "target/voice-reference-evaluation/fixture-manifest.json",
+    "files": {
+      "public-target.wav": "3036959fe8a6336844abd2ebf812d0684a16dd3c9ddec15a763cbcf73cb1f55f",
+      "public-competitor.wav": "628a9cf1a4f91e1556b7c7f83165722531f2a975a74786f1d2e86845aafc2387",
+      "public-noise.wav": "d06169af67c640e6614d4b9e0b33fde93889f587225113351f26a773a5515a59",
+      "public-mixture.wav": "4ec4ee3e1420b031208ae6f85d51ab889c6594c1c6179e18d5db05fbe793ba00"
+    }
+  },
+  "results": {
+    "final_mixed_int8_one_p_core": {
+      "wall_rtf": 1.0305026877846104,
+      "process_cpu_rtf": 1.0104042226000012,
+      "chunk_ms": 64,
+      "chunk_cost_ms_mean": 65.63711387163123,
+      "chunk_cost_ms_p95": 81.46060577128083,
+      "chunk_cost_ms_max": 96.84890799690038,
+      "input_readiness_ms_max": 88.0,
+      "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+      "model": "spk_emb_causal_100",
+      "backend": "ort",
+      "threads": 1,
+      "partial_int8": true,
+      "static_convolution_int8": true,
+      "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+      "input_sha256": "47eae56040bec3eb63049c03cd2a1634b4ea8f50d37fe768b1b216d4d4606653",
+      "enrollment_sha256": "f01cffd7a33fc29a1d9f2f0ac277fc8656c0794abe015ee5cc8dc55351fb6cba",
+      "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+      "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+      "torch_version": "2.9.1+cpu",
+      "torchaudio_version": "2.9.1+cpu",
+      "machine": "Linux-7.2.5-3-omarchy-x86_64-with-glibc2.44",
+      "cpu_affinity": [
+        0
+      ],
+      "command": [
+        "scripts/prototype-target-extraction.py",
+        "--backend",
+        "ort",
+        "--int8",
+        "--static-int8",
+        "--check",
+        "--case",
+        "final-verified",
+        "--target",
+        "target/target-speaker-extraction/target.wav",
+        "--competitor",
+        "target/target-speaker-extraction/competitor.wav"
+      ],
+      "stream_can_keep_up": false,
+      "extractor_cpu_budget_pass": false,
+      "checks": {
+        "upstream_max_abs_error": 1.4901161193847656e-08,
+        "future_input_max_abs_error": 0.0,
+        "chunk_partition_max_abs_error": 1.1175870895385742e-08,
+        "reset_max_abs_error": 0.0,
+        "backend_future_input_max_abs_error": 0.0,
+        "backend_vs_torch_rmse": 0.0001774418051354587
+      },
+      "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+      "acoustics": [
+        {
+          "seconds": [
+            0,
+            3
+          ],
+          "target_projection_gain": -1.0051666498184204,
+          "competitor_projection_gain": -0.08235421031713486,
+          "target_to_competitor_projection_improvement_db": 21.73104476928711,
+          "output_si_sdr_db": 10.811882019042969,
+          "mixture_si_sdr_db": 0.04998131841421127
+        },
+        {
+          "seconds": [
+            3.2,
+            6.8
+          ],
+          "competitor_only_reduction_db": 35.53502655029297
+        },
+        {
+          "seconds": [
+            7,
+            10
+          ],
+          "target_projection_gain": -0.9954635500907898,
+          "competitor_projection_gain": -0.06512534618377686,
+          "target_to_competitor_projection_improvement_db": 23.685504913330078,
+          "output_si_sdr_db": 10.18747329711914,
+          "mixture_si_sdr_db": -1.6044985055923462
+        }
+      ]
+    },
+    "mixed_int8_two_p_cores": {
+      "wall_rtf": 1.37124117303174,
+      "process_cpu_rtf": 2.630131836099999,
+      "chunk_ms": 64,
+      "chunk_cost_ms_mean": 87.34020210393248,
+      "chunk_cost_ms_p95": 114.65302079450338,
+      "chunk_cost_ms_max": 145.04319400293753,
+      "input_readiness_ms_max": 88.0,
+      "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+      "model": "spk_emb_causal_100",
+      "backend": "ort",
+      "threads": 2,
+      "partial_int8": true,
+      "static_convolution_int8": true,
+      "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+      "input_sha256": "47eae56040bec3eb63049c03cd2a1634b4ea8f50d37fe768b1b216d4d4606653",
+      "enrollment_sha256": "f01cffd7a33fc29a1d9f2f0ac277fc8656c0794abe015ee5cc8dc55351fb6cba",
+      "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+      "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+      "torch_version": "2.9.1+cpu",
+      "torchaudio_version": "2.9.1+cpu",
+      "stream_can_keep_up": false,
+      "extractor_cpu_budget_pass": false,
+      "checks": null,
+      "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+      "acoustics": [
+        {
+          "seconds": [
+            0,
+            3
+          ],
+          "target_projection_gain": -1.004814624786377,
+          "competitor_projection_gain": -0.08216147869825363,
+          "target_to_competitor_projection_improvement_db": 21.748353958129883,
+          "output_si_sdr_db": 10.803522109985352,
+          "mixture_si_sdr_db": 0.04998131841421127
+        },
+        {
+          "seconds": [
+            3.2,
+            6.8
+          ],
+          "competitor_only_reduction_db": 35.646148681640625
+        },
+        {
+          "seconds": [
+            7,
+            10
+          ],
+          "target_projection_gain": -0.9944388270378113,
+          "competitor_projection_gain": -0.06547123938798904,
+          "target_to_competitor_projection_improvement_db": 23.630550384521484,
+          "output_si_sdr_db": 10.149850845336914,
+          "mixture_si_sdr_db": -1.6044985055923462
+        }
+      ]
+    },
+    "reference_swap": {
+      "wall_rtf": 1.969378796761157,
+      "process_cpu_rtf": 1.930449642399998,
+      "chunk_ms": 64,
+      "chunk_cost_ms_mean": 125.4381399210928,
+      "chunk_cost_ms_p95": 147.67387341707945,
+      "chunk_cost_ms_max": 251.31778797367588,
+      "input_readiness_ms_max": 88.0,
+      "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+      "model": "spk_emb_causal_100",
+      "backend": "ort",
+      "threads": 1,
+      "partial_int8": true,
+      "static_convolution_int8": true,
+      "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+      "input_sha256": "47eae56040bec3eb63049c03cd2a1634b4ea8f50d37fe768b1b216d4d4606653",
+      "enrollment_sha256": "aa7fbc8eaa9b01124fa848080b648f008fa75abb248e1621e877cfb72e8edb46",
+      "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+      "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+      "checks": null,
+      "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+      "acoustics": [
+        {
+          "seconds": [
+            0,
+            3
+          ],
+          "target_projection_gain": -0.0817975327372551,
+          "competitor_projection_gain": -1.0289599895477295,
+          "target_to_competitor_projection_improvement_db": -21.9931640625,
+          "output_si_sdr_db": -23.387081146240234,
+          "mixture_si_sdr_db": 0.04998131841421127
+        },
+        {
+          "seconds": [
+            3.2,
+            6.8
+          ],
+          "competitor_only_reduction_db": -0.6344109773635864
+        },
+        {
+          "seconds": [
+            7,
+            10
+          ],
+          "target_projection_gain": -0.4270693063735962,
+          "competitor_projection_gain": -0.9659417867660522,
+          "target_to_competitor_projection_improvement_db": -7.089051723480225,
+          "output_si_sdr_db": -9.999873161315918,
+          "mixture_si_sdr_db": -1.6044985055923462
+        }
+      ]
+    },
+    "different_public_readings": {
+      "wall_rtf": 1.8526545332337263,
+      "process_cpu_rtf": 1.8212987313999984,
+      "chunk_ms": 64,
+      "chunk_cost_ms_mean": 118.00347345437748,
+      "chunk_cost_ms_p95": 147.3208992392756,
+      "chunk_cost_ms_max": 161.97255899896845,
+      "input_readiness_ms_max": 88.0,
+      "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+      "model": "spk_emb_causal_100",
+      "backend": "ort",
+      "threads": 1,
+      "partial_int8": true,
+      "static_convolution_int8": true,
+      "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+      "input_sha256": "4ec4ee3e1420b031208ae6f85d51ab889c6594c1c6179e18d5db05fbe793ba00",
+      "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+      "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+      "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+      "checks": null,
+      "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+      "acoustics": [
+        {
+          "seconds": [
+            0,
+            3
+          ],
+          "target_projection_gain": -0.6292552947998047,
+          "competitor_projection_gain": -0.24442969262599945,
+          "target_to_competitor_projection_improvement_db": 8.213459014892578,
+          "output_si_sdr_db": 2.458679437637329,
+          "mixture_si_sdr_db": 6.116610050201416
+        },
+        {
+          "seconds": [
+            3.2,
+            6.8
+          ],
+          "competitor_only_reduction_db": 17.943559646606445
+        },
+        {
+          "seconds": [
+            7,
+            10
+          ],
+          "target_projection_gain": -1.0593096017837524,
+          "competitor_projection_gain": -0.09428469836711884,
+          "target_to_competitor_projection_improvement_db": 21.011634826660156,
+          "output_si_sdr_db": 17.526525497436523,
+          "mixture_si_sdr_db": 8.960132598876953
+        }
+      ]
+    },
+    "fp32_parity_only_cpu_confounded": {
+      "wall_rtf": 3.7189842723309994,
+      "process_cpu_rtf": 3.5737227701000007,
+      "chunk_ms": 64,
+      "chunk_cost_ms_mean": 236.877979129363,
+      "chunk_cost_ms_p95": 291.5441107819788,
+      "chunk_cost_ms_max": 387.5413410132751,
+      "input_readiness_ms_max": 88.0,
+      "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+      "model": "spk_emb_causal_100",
+      "backend": "ort",
+      "threads": 1,
+      "partial_int8": false,
+      "static_convolution_int8": false,
+      "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+      "input_sha256": "47eae56040bec3eb63049c03cd2a1634b4ea8f50d37fe768b1b216d4d4606653",
+      "enrollment_sha256": "f01cffd7a33fc29a1d9f2f0ac277fc8656c0794abe015ee5cc8dc55351fb6cba",
+      "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+      "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+      "checks": {
+        "upstream_max_abs_error": 1.30385160446167e-08,
+        "future_input_max_abs_error": 0.0,
+        "chunk_partition_max_abs_error": 1.3969838619232178e-08,
+        "reset_max_abs_error": 0.0,
+        "backend_vs_torch_rmse": 2.111329333587264e-09
+      },
+      "graph_sha256": "9ce2fcdde8175dcc9b7389ccabcd829704371e21c8ae6bdfb44b8c9c9ea98e6a",
+      "acoustics": [
+        {
+          "seconds": [
+            0,
+            3
+          ],
+          "target_projection_gain": -1.0098000764846802,
+          "competitor_projection_gain": -0.07917962223291397,
+          "target_to_competitor_projection_improvement_db": 22.112438201904297,
+          "output_si_sdr_db": 10.833305358886719,
+          "mixture_si_sdr_db": 0.04998131841421127
+        },
+        {
+          "seconds": [
+            3.2,
+            6.8
+          ],
+          "competitor_only_reduction_db": 36.169063568115234
+        },
+        {
+          "seconds": [
+            7,
+            10
+          ],
+          "target_projection_gain": -1.0010700225830078,
+          "competitor_projection_gain": -0.06174701824784279,
+          "target_to_competitor_projection_improvement_db": 24.19696807861328,
+          "output_si_sdr_db": 10.146888732910156,
+          "mixture_si_sdr_db": -1.6044985055923462
+        }
+      ]
+    },
+    "calibration_disjoint_public_readings": {
+      "wall_rtf": 1.3309285994793754,
+      "process_cpu_rtf": 1.2965053177000012,
+      "chunk_ms": 64,
+      "chunk_cost_ms_mean": 84.77252225983283,
+      "chunk_cost_ms_p95": 93.0548082338646,
+      "chunk_cost_ms_max": 115.36630999762565,
+      "input_readiness_ms_max": 88.0,
+      "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+      "model": "spk_emb_causal_100",
+      "backend": "ort",
+      "threads": 1,
+      "partial_int8": true,
+      "static_convolution_int8": true,
+      "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+      "input_sha256": "2f1f897ae5fe60a5c83d747f956eed1248dc72e6130b708e4b803027f766ad70",
+      "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+      "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+      "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+      "torch_version": "2.9.1+cpu",
+      "torchaudio_version": "2.9.1+cpu",
+      "machine": "Linux-7.2.5-3-omarchy-x86_64-with-glibc2.44",
+      "cpu_affinity": [
+        0
+      ],
+      "command": [
+        "scripts/prototype-target-extraction.py",
+        "--backend",
+        "ort",
+        "--int8",
+        "--static-int8",
+        "--case",
+        "public-disjoint",
+        "--mixture",
+        "target/target-speaker-extraction/disjoint-mixture.wav",
+        "--enrollment",
+        "target/voice-reference-evaluation/enrollment.wav",
+        "--target",
+        "target/target-speaker-extraction/disjoint-target.wav",
+        "--competitor",
+        "target/target-speaker-extraction/disjoint-competitor.wav"
+      ],
+      "stream_can_keep_up": false,
+      "extractor_cpu_budget_pass": false,
+      "checks": null,
+      "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+      "acoustics": [
+        {
+          "seconds": [
+            0,
+            3
+          ],
+          "target_projection_gain": -1.0473463535308838,
+          "competitor_projection_gain": -0.06916174292564392,
+          "target_to_competitor_projection_improvement_db": 23.604488372802734,
+          "output_si_sdr_db": 16.94862174987793,
+          "mixture_si_sdr_db": 8.96019172668457
+        },
+        {
+          "seconds": [
+            3.2,
+            6.8
+          ],
+          "competitor_only_reduction_db": 18.611276626586914
+        },
+        {
+          "seconds": [
+            7,
+            10
+          ],
+          "target_projection_gain": -1.0156853199005127,
+          "competitor_projection_gain": -0.2228996753692627,
+          "target_to_competitor_projection_improvement_db": 13.172994613647461,
+          "output_si_sdr_db": 10.494888305664062,
+          "mixture_si_sdr_db": 2.594764471054077
+        }
+      ]
+    }
+  },
+  "measurement_notes": [
+    "FP32 parity run overlapped another benchmark; excluded from CPU conclusions",
+    "Final one-P-core run is sequential, includes startup and EOF chunk processing; enrollment/model loading excluded",
+    "Acoustics from short development screens; LibriSpeech identities overlap candidate training corpus",
+    "CPU-only screen cannot certify latency when it cannot keep up; no shipping pass inferred from 88ms input readiness",
+    "Original public first-turn screen overlaps static calibration for two seconds; calibration-disjoint follow-up retained separately with frozen graph."
+  ],
+  "calibration_disjoint_public_fixture": {
+    "source_ranges_seconds": [
+      [
+        8.5,
+        11.5
+      ],
+      [
+        13.5,
+        17.5
+      ],
+      [
+        5,
+        8
+      ]
+    ],
+    "static_quantization_calibration_range_seconds": [
+      0,
+      5
+    ],
+    "evaluation_calibration_audio_ranges_disjoint": true,
+    "source_manifest": "target/voice-reference-evaluation/fixture-manifest.json",
+    "files": {
+      "disjoint-target.wav": "e9ed8d2b007dd2e9b053b728d34473e026b74fd15f2ffc0a157109590f509832",
+      "disjoint-competitor.wav": "a35988182c66ca1f3a17d56eb8749d11dde3c6adf5a187bce2cef8b955aa8648",
+      "disjoint-noise.wav": "26b733e0971a50987baaf0faf17718a87671f52bf62c2ebbd1fc126504ad84dc",
+      "disjoint-mixture.wav": "2f1f897ae5fe60a5c83d747f956eed1248dc72e6130b708e4b803027f766ad70"
+    }
+  }
+}
