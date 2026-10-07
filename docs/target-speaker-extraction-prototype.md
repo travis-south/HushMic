@@ -11,11 +11,69 @@ Reference-conditioned extraction works in the prototype: swapping the enrollment
 recording changes which voice is extracted from the same mixture. This is audio
 extraction, beyond the current whole-mixture presence gate.
 
-**The tested model is not ready for HushMic.** It exceeds the CPU budget even
-after ONNX export and INT8 optimization, and a second set of recordings exposes
-target-speech loss. No live integration or 200 ms acceptance claim follows from
-this experiment. A smaller trained extractor or substantial model optimization
-is needed before replacing the existing gate.
+**The tested model is not ready for HushMic.** Initial runs exceeded the CPU
+budget and lost target speech. The follow-up below improves the speech-loss case
+and demonstrates lower CPU cost in later runs, but combined-worker latency,
+speech preservation and sustained performance under load remain unverified.
+
+## Follow-up: warm the recurrent state
+
+Feed 128 frames (1.024 seconds) of synthetic silence through the extractor after
+computing the fixed enrollment and resetting its state. This supplies artificial
+past context; it reads no microphone audio or future samples. It adds about
+0.6–0.7 seconds of initialization work for the full model in these runs, excluded
+from streaming RTF. It adds no queued audio in the offline runner. App startup
+and total processing latency still need measurement.
+
+With the same six-block INT8 graph and reference, the earlier public first-turn
+failure changes from target projection magnitude 0.63 to 1.05, and output SI-SDR
+from 2.46 to 13.65 dB (input: 6.12 dB). This establishes that synthetic past
+context changes the result; it does not establish general word preservation.
+Primed FP32/INT8 checks cover state reset, future-input independence and chunk
+partitioning. The original trained architecture remains the default.
+
+The full fifty-second public stream used 0.629 CPU seconds and 0.633 wall seconds
+per audio second. Chunk cost p95 was 49.1 ms and maximum 67.9 ms for 64 ms of
+audio. Normal overlap improved target/competitor projections by 13.2 and 20.9 dB;
+the long target-free core reduced energy by 19.2 dB. That pause score excludes
+200 ms of release and 30 ms before resumption. A separate quiet-without-competitor
+screen retained target projection magnitudes 0.99–1.06 and improved SI-SDR.
+
+Earlier runs exceeding one CPU second per audio second remain recorded. Priming
+adds initialization work and does not explain lower per-chunk CPU measurements;
+load, frequency and scheduling were not controlled across all runs. The full
+pipeline has not passed its 0.8 CPU budget or 200 ms ceiling. Target-only speech
+in the long stream also falls from 18.0 to 16.1 dB SI-SDR despite retaining its
+projection magnitude, so distortion and word/onset preservation still need work.
+The first public crop overlaps calibration as documented below. Later long-stream
+intervals are calibration-disjoint. Quiet speech under a louder competitor was
+recorded as exploratory evidence and remains outside acceptance scope.
+
+A four-block depth ablation also kept up in later INT8 runs, but weakened
+selection and retained only 0.55 target projection in the unprimed failure case.
+It removes trained blocks without retraining; it is not preferred over the
+primed full model. `--blocks 4` reproduces it without replacing the six-block
+graphs or checkpoint. The export wrapper now explicitly retains inference mode.
+
+```bash
+nice -n 19 taskset -c 2 env OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+  target/voice-reference-evaluation/venv/bin/python \
+  scripts/prototype-target-extraction.py --prime-silence \
+  --backend ort --int8 --static-int8 --check --case primed-public-reproduce \
+  --mixture target/target-speaker-extraction/public-mixture.wav \
+  --target target/target-speaker-extraction/public-target.wav \
+  --competitor target/target-speaker-extraction/public-competitor.wav \
+  --enrollment target/voice-reference-evaluation/enrollment.wav
+```
+
+Further candidate screening found the University of Washington model has
+binaural input, noncommercial source terms and missing checkpoint links;
+OpenSpeakerBeam-SS uses global utterance normalization despite its streaming
+description; DAVE uses unmasked temporal attention and separates anonymous
+streams; and the downloadable Voce SpeakerBeam-SS checkpoint lacks a model card,
+matching public implementation and verified model terms. Pinned source and
+acquisition evidence are summarized in the results file. No candidate was
+packaged or added to the live app.
 
 ## Candidate and implementation
 
@@ -136,12 +194,16 @@ The weights are not added to the repository or release package. Shipping also
 requires resolving the model terms, sustained combined-worker performance,
 48 kHz adaptation, total latency, preservation/onsets, and real call quality.
 
-The final live status check found the existing trial in Light fallback with
+The initial live status check found the existing trial in Light fallback with
 protection unavailable (`Detector stream fell behind; ordinary denoising
 continues`); its saved choice remains High Quality. CPU experiments may have
 contributed to the lag. Chromium had two active microphone consumers, so the
 chain was not restarted during possible call use. No experiment process remains
-running. Reloading the existing trial restores a fresh detector instance.
+running. After the follow-up experiments, there were no microphone consumers,
+so the frozen trial was relaunched with its saved High Quality and protection
+requests. The chain is running; its runtime engine and detector await audio
+while idle. The new extractor remains offline, and the personal reference was
+not replaced or inspected.
 
 Context7 documentation for PyTorch and ONNX Runtime was consulted for CPU
 inference and quantization. The pinned implementation and
