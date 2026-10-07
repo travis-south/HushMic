@@ -143,7 +143,7 @@ class ExportCore(torch.nn.Module):
         return (torch.cat(result, 2), *updated)
 
 
-def ort_core(model, cues, frames, threads, export, quantize, static_int8=False):
+def ort_core(model, cues, frames, threads, export, quantize, static_int8=False, spin=True):
     import onnxruntime as ort
     assert set(cues) == {"spkemb"}, "ONNX pilot supports the embedding-conditioned candidate"
     blocks = len(model.sep_model.separator.separation)
@@ -201,6 +201,7 @@ def ort_core(model, cues, frames, threads, export, quantize, static_int8=False):
     options = ort.SessionOptions()
     options.intra_op_num_threads = threads
     options.inter_op_num_threads = 1
+    options.add_session_config_entry("session.intra_op.allow_spinning", "1" if spin else "0")
     session = ort.InferenceSession(str(graph), options, providers=["CPUExecutionProvider"])
     cache = [s.numpy() for s in states]
 
@@ -225,12 +226,13 @@ def ort_core(model, cues, frames, threads, export, quantize, static_int8=False):
     return run
 
 
-def extract(model, samples, cues, frames, core=spectrum, prime_silence=False):
+def extract(model, samples, cues, frames, core=spectrum, prime_silence=False, sink=None, source=None, paced=False):
     """Replay a stream at 16 kHz; bounded input windows and persistent LSTM state.
 
     Each frame reads only through center+256 samples. Outputs are emitted once
     no later synthesis frame can affect them. No full-utterance normalization.
-    This measures the extractor alone, excluding PipeWire and resampling.
+    Source/sink callbacks include their costs; the default measures extraction
+    alone. PipeWire and host buffering are outside this offline runner.
     """
     reset_cache(model)
     if hasattr(core, "reset"):
@@ -247,13 +249,21 @@ def extract(model, samples, cues, frames, core=spectrum, prime_silence=False):
     assert win == 512 and hop == 128 and samples.shape[0] == 1
     window = torch.hann_window(win)
     accum, weight = torch.zeros(win), torch.zeros(win)
-    output, costs, cpu_costs, readiness = [], [], [], []
+    output, costs, cpu_costs, readiness, chunks = [], [], [], [], []
     length = samples.shape[-1]
     # Reflect only the startup and actual EOF boundaries, as upstream STFT does.
     count = length // hop + 1
+    stream_start = time.perf_counter()
+    stream_cpu_start = time.process_time()
     for first in range(0, count, frames):
         n = min(frames, count - first)
+        emitted_before = len(output)
+        input_ready = min(length, (first + n - 1) * hop + win // 2)
+        if paced:
+            time.sleep(max(0, stream_start + input_ready / 16000 - time.perf_counter()))
         start, cpu_start = time.perf_counter(), time.process_time()
+        if source is not None:
+            source(input_ready)
         centers = torch.arange(first, first + n)[:, None] * hop
         indices = centers + torch.arange(win)[None, :] - win // 2
         indices = torch.where(indices < 0, -indices, indices)
@@ -270,21 +280,33 @@ def extract(model, samples, cues, frames, core=spectrum, prime_silence=False):
                 take = min(hop, length - source_start)
                 if take > 0:
                     output.append((accum[:take] / weight[:take].clamp_min(1e-12)).clone())
-                    input_ready = min(length, (first + n - 1) * hop + win // 2)
                     readiness.append((input_ready - source_start) / 16)
             accum = torch.cat((accum[hop:], torch.zeros(hop)))
             weight = torch.cat((weight[hop:], torch.zeros(hop)))
+        if sink is not None:
+            sink(torch.cat(output[emitted_before:]).numpy() if len(output) > emitted_before else np.empty(0, np.float32))
         costs.append((time.perf_counter() - start) * 1000)
         cpu_costs.append(time.process_time() - cpu_start)
+        if sink is not None:
+            chunks.append({"input_ready_samples": input_ready, "wall_ms": costs[-1],
+                           "actual_finish_ms": (time.perf_counter() - stream_start) * 1000})
     # At EOF no future frames will arrive; flush the synthesis tail.
     remainder = length - sum(x.numel() for x in output)
     if remainder:
         output.append(accum[:remainder] / weight[:remainder].clamp_min(1e-12))
+        if sink is not None:
+            start, cpu_start = time.perf_counter(), time.process_time()
+            sink(output[-1].numpy())
+            chunks.append({"input_ready_samples": length, "wall_ms": (time.perf_counter() - start) * 1000,
+                           "actual_finish_ms": (time.perf_counter() - stream_start) * 1000})
+            costs.append(chunks[-1]["wall_ms"])
+            cpu_costs.append(time.process_time() - cpu_start)
     result = torch.cat(output)
     assert len(result) == length and result.isfinite().all()
     return result.numpy(), {
         "wall_rtf": sum(costs) / 1000 / (length / 16000),
         "process_cpu_rtf": sum(cpu_costs) / (length / 16000),
+        "stream_process_cpu_rtf": (time.process_time() - stream_cpu_start) / (length / 16000),
         "chunk_ms": frames * 8,
         "chunk_cost_ms_mean": float(np.mean(costs)),
         "chunk_cost_ms_p95": float(np.percentile(costs, 95)),
@@ -293,6 +315,7 @@ def extract(model, samples, cues, frames, core=spectrum, prime_silence=False):
         "priming_silence_ms": 1024 if prime_silence else 0,
         "priming_wall_ms": prime_wall * 1000 if prime_silence else 0,
         "priming_cpu_ms": prime_cpu * 1000 if prime_silence else 0,
+        **({"chunks": chunks} if sink is not None else {}),
         "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
     }
 
@@ -363,8 +386,8 @@ def metrics(output, mixture, target, competitor, intervals):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--threads", type=int, default=1)
-    parser.add_argument("--blocks", type=int, choices=(4, 6), default=6,
-                        help="Four-block depth ablation; six is the trained architecture")
+    parser.add_argument("--blocks", type=int, choices=(4, 5, 6), default=6,
+                        help="Reduced-depth ablation; six is the trained architecture")
     parser.add_argument("--prime-silence", action="store_true",
                         help="Warm recurrent state with 1.024 s of synthetic past silence")
     parser.add_argument("--int8", action="store_true")

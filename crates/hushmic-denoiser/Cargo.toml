@@ -75,3 +75,7 @@ required-features = ["load-dynamic"]
 [[example]]
 name = "bench_native"
 required-features = ["load-dynamic", "native"]
+
+[[example]]
+name = "prototype_pipeline"
+required-features = ["load-dynamic", "native"]

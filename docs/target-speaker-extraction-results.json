@@ -1763,5 +1763,2229 @@
       "microphone_idle_before_relaunch": true,
       "note": "Frozen existing trial relaunched after all experiment inference stopped. Saved Quality and protection request restored; no consumer means runtime engine/detector await audio. No extraction integration or enrollment change."
     }
+  },
+  "streaming_pipeline_continuation": {
+    "date": "2026-10-07",
+    "base_commit": "a50c98f",
+    "scope": "Offline actual 48 kHz pipeline; no app/plugin/settings or personal enrollment changes",
+    "verdict": "CONDITIONAL_COMPACT_RUNTIME_PASSES_BUT_NO_SHIPPABLE_CONFIGURATION",
+    "reasons": [
+      "Full six-block model did not reliably meet total CPU and 200 ms processing screens on the shared target desktop",
+      "Serial High Quality cascade adds CPU and native algorithmic latency; worsens target-only SI-SDR versus extraction alone",
+      "Four-block four-frame extraction passed two full streams, but pinned ordinary-quiet runtime failed",
+      "Alternate enrolled voice in the compact variant only gains 0.5/3.8 dB selection; FP32 also weak, so INT8 is not the root cause",
+      "OpenVINO executes FP32 reference LSTM kernels even for imported dynamic-INT8 graph and does not meet runtime limits here",
+      "ORT 1.30 Python comparison does not establish a passing full-model screen",
+      "Weight redistribution terms, live worker/host timing, word preservation and real call quality remain unresolved"
+    ],
+    "machine": "12th Gen Intel Core i5-1235U; shared desktop with changing background CPU workloads",
+    "thresholds": {
+      "total_cpu_seconds_per_audio_second": 0.8,
+      "hushmic_processing_ceiling_ms": 200,
+      "offline_output_availability_screen_ms": 190,
+      "host_quantum_reserved_ms": 10
+    },
+    "measurement_limits": [
+      "This is offline source-release/deadline simulation with actual paced wall-clock measurements, not actual PipeWire worker latency",
+      "Most runs pinned CPU 2; two-thread runs CPUs 0 and 2; P-core pool runs CPUs 0-3; normal-scheduling runs retain all allowed CPUs",
+      "Initialization and synthetic prior excluded; final parent CPU accounting also includes paced waits; older chunk CPU sums exclude idle spinning",
+      "Initial two cascade runs used precomputed input downsampling; later source callbacks perform bounded downsampling during processing",
+      "Scores are projection/energy/SI-SDR screens, not word-intelligibility certification; calibration overlap and development-set caveats remain",
+      "Quiet speech under a louder competitor not acoustically accepted; runtime replay includes the entire public scenario",
+      "Earlier completion-time code hashes are explicitly labeled; later source snapshots identify captured bytes actually executed",
+      "No GPU device exposed by isolated OpenVINO SDK; no GPU or driver changes attempted"
+    ],
+    "current_runner_sha256": "34fcac6d126f3d10818a95d01b5466428de7c5a6a519e63c1a9a618c5cb7abd8",
+    "current_extractor_sha256": "a32ab547c7bc89863a51ded7961c841a30f32a9d7bd38200cf4cf2eafcd892ee",
+    "current_bridge_source_sha256": "298ef40ab233c07f3f06c640750d6ca189ac0f4fc1ee0a09030c632f04b46946",
+    "current_bridge_sha256": "c9362b06118752cfc4c251d1fc6fe3b4bf4a25e86e6f99ec2b082508b02cfd71",
+    "checks": [
+      "Native INT8 engine asserted; no silent ONNX fallback",
+      "Sinc partition equivalence in both rate directions: maximum error 0",
+      "Native output partition equivalence: maximum error 0",
+      "Oversized and non-finite native packets rejected",
+      "Cached/upstream, partition, reset and future-independence assertions pass for tested graphs",
+      "Finite correctly drained output at exact expected length",
+      "Python syntax, release bridge build, rustfmt and clippy -D warnings passed"
+    ],
+    "auxiliary_controls": {
+      "compact-swapped-fp32-control": {
+        "kind": "FP32 ablation quality control; not a shipping/runtime candidate",
+        "separation_blocks": 4,
+        "frames": 4,
+        "input_sha256": "47eae56040bec3eb63049c03cd2a1634b4ea8f50d37fe768b1b216d4d4606653",
+        "enrollment_sha256": "aa7fbc8eaa9b01124fa848080b648f008fa75abb248e1621e877cfb72e8edb46",
+        "graph_sha256": "d11471dd47bdad0fcdec565de5f496cdb0db242e025630baccc5d337f517545e",
+        "fp32_vs_int8_rmse": 0.0003873219829984009,
+        "fp32_vs_int8_max_abs_error": 0.005436960607767105,
+        "acoustics": [
+          {
+            "seconds": [
+              0,
+              3
+            ],
+            "target_projection_gain": -0.6478245258331299,
+            "competitor_projection_gain": -0.5971611142158508,
+            "target_to_competitor_projection_improvement_db": 0.7073171138763428,
+            "output_si_sdr_db": -0.816681981086731,
+            "mixture_si_sdr_db": -0.23998065292835236
+          },
+          {
+            "seconds": [
+              3.2,
+              6.8
+            ],
+            "target_projection_gain": -0.6924154758453369,
+            "competitor_projection_gain": 0.0,
+            "competitor_absent": true,
+            "output_si_sdr_db": 11.075386047363281,
+            "mixture_si_sdr_db": 67.97042846679688
+          },
+          {
+            "seconds": [
+              7,
+              10
+            ],
+            "target_projection_gain": -0.7226076126098633,
+            "competitor_projection_gain": -0.46257904171943665,
+            "target_to_competitor_projection_improvement_db": 3.874331474304199,
+            "output_si_sdr_db": 2.7187318801879883,
+            "mixture_si_sdr_db": 0.9359675645828247
+          }
+        ]
+      },
+      "historical-quality-baseline-acoustics": {
+        "historical_baseline": "/home/irvin/playground/personal/HushMic/target/voice-reference-evaluation/baseline-quality.wav",
+        "sha256": "a7fadf79a4579d2c8492ceb0b85bd6402fabfaeee718c56260f1ede652bb5e26",
+        "note": "Previously saved, already aligned ordinary High Quality plugin output. Same 50-second fixture; not a simultaneous performance baseline.",
+        "acoustics": [
+          {
+            "seconds": [
+              3,
+              8
+            ],
+            "target_projection_gain": 0.9568769931793213,
+            "competitor_projection_gain": 0.8736904859542847,
+            "target_to_competitor_projection_improvement_db": 0.7899703979492188,
+            "output_si_sdr_db": 6.101616859436035,
+            "mixture_si_sdr_db": 5.704476833343506
+          },
+          {
+            "seconds": [
+              8.5,
+              13.5
+            ],
+            "target_projection_gain": 0.9220680594444275,
+            "competitor_projection_gain": 0.7298934459686279,
+            "target_to_competitor_projection_improvement_db": 2.0300705432891846,
+            "output_si_sdr_db": 8.245619773864746,
+            "mixture_si_sdr_db": 7.493766784667969
+          },
+          {
+            "seconds": [
+              13.7,
+              33.47
+            ],
+            "competitor_only_reduction_db": 0.23885506391525269
+          },
+          {
+            "seconds": [
+              42.03,
+              48
+            ],
+            "target_projection_gain": 0.7528895139694214,
+            "competitor_projection_gain": 0.0,
+            "competitor_absent": true,
+            "output_si_sdr_db": 5.616273403167725,
+            "mixture_si_sdr_db": 18.004133224487305
+          }
+        ]
+      },
+      "b5-kernel-counts": {
+        "DynamicQuantizeMatMul": 11,
+        "QuantizeLinear": 160,
+        "QLinearConv": 128,
+        "DynamicQuantizeLSTM": 10
+      }
+    },
+    "runs": [
+      {
+        "case": "combined-public-long",
+        "artifact": "target/target-speaker-extraction/combined-public-long.json",
+        "metadata_sha256": "17a34ac83afc4b2c6d97cb36eafc2ec7824baf0d7ac91369c06c5f52d5b04fa7",
+        "output_sha256": "b1e4313e8e7d4b5c3b400f8897b0faeafd4757f870f0413f5dd371212f74d8fc",
+        "measurement": {
+          "wall_rtf": 0.7178266378599483,
+          "process_cpu_rtf": 0.4695598278800012,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 45.838227194121856,
+          "chunk_cost_ms_p95": 62.08885649994043,
+          "chunk_cost_ms_max": 79.53668599998309,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 376.26832899991314,
+          "priming_cpu_ms": 373.8072380000004,
+          "note": "TSE, bounded upsampling and actual native denoising measured together. Native startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Input downsampling compute, live worker and PipeWire untested.",
+          "checks": {
+            "resampler_max_abs_error": 0.0,
+            "native_chunk_partition_max_abs_error": 0.0
+          },
+          "native_engine": "native-int8",
+          "model": "/home/irvin/playground/personal/HushMic/assets/models/dpdfnet8_48khz_hr.onnx",
+          "model_sha256": "7b3afbb260a08fe9af3d16e3bda992971be1e7e951d1dee7c2d235f5c43f5631",
+          "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+          "bridge_sha256": "1923615d34ee0680d2d51962b3de8d494229ad903a0da84bfe624ea18d966e7a",
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--check",
+            "--case",
+            "combined-public-long"
+          ],
+          "input_sha256": "8c5bce93d2f92d2e7860b031a364f30a8418105d4010e9b42313defc539f27c6",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            2
+          ],
+          "combined_cpu_rtf": 0.7123762516400012,
+          "native_cpu_rtf": 0.24280000000000002,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 329.2819733324244,
+          "output_availability_ms_p95": 214.0308989334045,
+          "output_availability_over_190ms_packets": 357,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "completion_script_sha256": "fe1a90f2f5d9eeae44b9d6c9b824ba0c2aec75ca0901ee9de840db8d150a6161",
+          "completion_extractor_script_sha256": "b949d0d2e5a95457cc3443e2937b761ba91673b2f71fab79efcaaf03ce7bb2f9",
+          "source_hash_capture": "completion only; files may have changed during the run; not guaranteed to identify loaded code",
+          "acoustics": [
+            {
+              "seconds": [
+                3,
+                8
+              ],
+              "target_projection_gain": -1.020918607711792,
+              "competitor_projection_gain": -0.15313921868801117,
+              "target_to_competitor_projection_improvement_db": 16.47809410095215,
+              "output_si_sdr_db": 14.312654495239258,
+              "mixture_si_sdr_db": 5.704476833343506
+            },
+            {
+              "seconds": [
+                8.5,
+                13.5
+              ],
+              "target_projection_gain": -1.0142649412155151,
+              "competitor_projection_gain": -0.058164432644844055,
+              "target_to_competitor_projection_improvement_db": 24.829879760742188,
+              "output_si_sdr_db": 15.795392036437988,
+              "mixture_si_sdr_db": 7.493766784667969
+            },
+            {
+              "seconds": [
+                13.7,
+                33.47
+              ],
+              "competitor_only_reduction_db": 41.51710891723633
+            },
+            {
+              "seconds": [
+                42.03,
+                48
+              ],
+              "target_projection_gain": -0.9992920160293579,
+              "competitor_projection_gain": 0.0,
+              "competitor_absent": true,
+              "output_si_sdr_db": 13.15829849243164,
+              "mixture_si_sdr_db": 18.004133224487305
+            }
+          ]
+        }
+      },
+      {
+        "case": "combined-public-long-f4",
+        "artifact": "target/target-speaker-extraction/combined-public-long-f4.json",
+        "metadata_sha256": "90038291c6ed4556c796b275bb9b9cf85507737080b4f46071e3aab30e848866",
+        "output_sha256": "091ae8c9e9b9ba7557e889dbe26aa1d0aa6a7d695e5488a1d18107fd4f9de315",
+        "measurement": {
+          "wall_rtf": 1.1416463941601478,
+          "process_cpu_rtf": 0.7844657503800011,
+          "chunk_ms": 32,
+          "chunk_cost_ms_mean": 36.49764687212748,
+          "chunk_cost_ms_p95": 48.59068885001531,
+          "chunk_cost_ms_max": 72.27822300001208,
+          "input_readiness_ms_max": 56.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 758.2655740000064,
+          "priming_cpu_ms": 748.2328379999999,
+          "note": "TSE, bounded upsampling and actual native denoising measured together. Native startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Input downsampling compute, live worker and PipeWire untested.",
+          "checks": null,
+          "native_engine": "native-int8",
+          "model": "/home/irvin/playground/personal/HushMic/assets/models/dpdfnet8_48khz_hr.onnx",
+          "model_sha256": "7b3afbb260a08fe9af3d16e3bda992971be1e7e951d1dee7c2d235f5c43f5631",
+          "graph_sha256": "07522318098eac111bbabb2e8aaf62bfbb5621088eeedb2577868d2f66773bf0",
+          "bridge_sha256": "1923615d34ee0680d2d51962b3de8d494229ad903a0da84bfe624ea18d966e7a",
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "4",
+            "--export",
+            "--case",
+            "combined-public-long-f4"
+          ],
+          "input_sha256": "8c5bce93d2f92d2e7860b031a364f30a8418105d4010e9b42313defc539f27c6",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            2
+          ],
+          "frames": 4,
+          "combined_cpu_rtf": 1.126499082980001,
+          "native_cpu_rtf": 0.34199999999999997,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 7213.341630341006,
+          "output_availability_ms_p95": 6911.144714341061,
+          "output_availability_over_190ms_packets": 1553,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "completion_script_sha256": "d950a5f4e27f0aff18da9b7747e0f49d7ad71d0de8da90307bc519d563c8e03a",
+          "completion_extractor_script_sha256": "b949d0d2e5a95457cc3443e2937b761ba91673b2f71fab79efcaaf03ce7bb2f9",
+          "source_hash_capture": "completion only; files may have changed during the run; not guaranteed to identify loaded code",
+          "acoustics": [
+            {
+              "seconds": [
+                3,
+                8
+              ],
+              "target_projection_gain": -1.0220797061920166,
+              "competitor_projection_gain": -0.15566328167915344,
+              "target_to_competitor_projection_improvement_db": 16.345972061157227,
+              "output_si_sdr_db": 14.2979097366333,
+              "mixture_si_sdr_db": 5.704476833343506
+            },
+            {
+              "seconds": [
+                8.5,
+                13.5
+              ],
+              "target_projection_gain": -1.0182387828826904,
+              "competitor_projection_gain": -0.058737047016620636,
+              "target_to_competitor_projection_improvement_db": 24.778749465942383,
+              "output_si_sdr_db": 15.907563209533691,
+              "mixture_si_sdr_db": 7.493766784667969
+            },
+            {
+              "seconds": [
+                13.7,
+                33.47
+              ],
+              "competitor_only_reduction_db": 41.00749969482422
+            },
+            {
+              "seconds": [
+                42.03,
+                48
+              ],
+              "target_projection_gain": -1.000341773033142,
+              "competitor_projection_gain": 0.0,
+              "competitor_absent": true,
+              "output_si_sdr_db": 13.14803695678711,
+              "mixture_si_sdr_db": 18.004133224487305
+            }
+          ]
+        }
+      },
+      {
+        "case": "combined-streaming-f8",
+        "artifact": "target/target-speaker-extraction/combined-streaming-f8.json",
+        "metadata_sha256": "51808c3f94d6832b4f834a8405d0f46eaaa2b93d559832037b2f7df59ed0ef0e",
+        "output_sha256": "818912c3e596ccee71eceb9d3256cf84e738d8a2ee7ccd91009f5870baf11f81",
+        "measurement": {
+          "wall_rtf": 1.063618539339959,
+          "process_cpu_rtf": 0.6971959660799988,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 67.91944695657466,
+          "chunk_cost_ms_p95": 95.25789289984913,
+          "chunk_cost_ms_max": 155.13105600007293,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 818.3982810000998,
+          "priming_cpu_ms": 808.2646679999996,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling and actual native denoising measured together. Native startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": {
+            "resampler_max_abs_error": 0.0,
+            "native_chunk_partition_max_abs_error": 0.0
+          },
+          "native_engine": "native-int8",
+          "model": "/home/irvin/playground/personal/HushMic/assets/models/dpdfnet8_48khz_hr.onnx",
+          "model_sha256": "7b3afbb260a08fe9af3d16e3bda992971be1e7e951d1dee7c2d235f5c43f5631",
+          "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+          "bridge_sha256": "1923615d34ee0680d2d51962b3de8d494229ad903a0da84bfe624ea18d966e7a",
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "8",
+            "--check",
+            "--case",
+            "combined-streaming-f8"
+          ],
+          "input_sha256": "8c5bce93d2f92d2e7860b031a364f30a8418105d4010e9b42313defc539f27c6",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            2
+          ],
+          "frames": 8,
+          "combined_cpu_rtf": 1.0498186914199987,
+          "native_cpu_rtf": 0.3526,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 3342.890349331242,
+          "output_availability_ms_p95": 2890.3665711338444,
+          "output_availability_over_190ms_packets": 783,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "completion_script_sha256": "fa4fc9e3d10a41c578f2165543aa8192c511fc88402ed4532724ee676762850a",
+          "completion_extractor_script_sha256": "4a294b2a1701a4adc1c54e63ffe8e39511a57edd92bdf3ff3e66224e4dbda82c",
+          "source_hash_capture": "completion only; files may have changed during the run; not guaranteed to identify loaded code",
+          "acoustics": [
+            {
+              "seconds": [
+                3,
+                8
+              ],
+              "target_projection_gain": -1.0216740369796753,
+              "competitor_projection_gain": -0.15521115064620972,
+              "target_to_competitor_projection_improvement_db": 16.36779022216797,
+              "output_si_sdr_db": 14.310720443725586,
+              "mixture_si_sdr_db": 5.704476833343506
+            },
+            {
+              "seconds": [
+                8.5,
+                13.5
+              ],
+              "target_projection_gain": -1.0145862102508545,
+              "competitor_projection_gain": -0.058089811354875565,
+              "target_to_competitor_projection_improvement_db": 24.843778610229492,
+              "output_si_sdr_db": 15.807137489318848,
+              "mixture_si_sdr_db": 7.493766784667969
+            },
+            {
+              "seconds": [
+                13.7,
+                33.47
+              ],
+              "competitor_only_reduction_db": 41.4906120300293
+            },
+            {
+              "seconds": [
+                42.03,
+                48
+              ],
+              "target_projection_gain": -0.9996172189712524,
+              "competitor_projection_gain": 0.0,
+              "competitor_absent": true,
+              "output_si_sdr_db": 13.189066886901855,
+              "mixture_si_sdr_db": 18.004133224487305
+            }
+          ]
+        }
+      },
+      {
+        "case": "combined-paced-f4",
+        "artifact": "target/target-speaker-extraction/combined-paced-f4.json",
+        "metadata_sha256": "beec241399dd316ebaf9262b12d2995823605378a114b80fc23dcaca18a1f957",
+        "output_sha256": "0d0ecb637cf70b32f26431c1fafe508f513b89794c8eda8f1196dd249cb5ab25",
+        "measurement": {
+          "wall_rtf": 1.626850483080052,
+          "process_cpu_rtf": 1.1253154877200011,
+          "chunk_ms": 32,
+          "chunk_cost_ms_mean": 52.009286543479924,
+          "chunk_cost_ms_p95": 68.68435709991444,
+          "chunk_cost_ms_max": 87.47826199987685,
+          "input_readiness_ms_max": 56.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 1086.7136090000713,
+          "priming_cpu_ms": 1071.2697899999996,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling and actual native denoising measured together. Native startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": {
+            "resampler_max_abs_error": 0.0,
+            "native_chunk_partition_max_abs_error": 0.0
+          },
+          "native_engine": "native-int8",
+          "model": "/home/irvin/playground/personal/HushMic/assets/models/dpdfnet8_48khz_hr.onnx",
+          "model_sha256": "7b3afbb260a08fe9af3d16e3bda992971be1e7e951d1dee7c2d235f5c43f5631",
+          "graph_sha256": "07522318098eac111bbabb2e8aaf62bfbb5621088eeedb2577868d2f66773bf0",
+          "bridge_sha256": "1923615d34ee0680d2d51962b3de8d494229ad903a0da84bfe624ea18d966e7a",
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "4",
+            "--paced",
+            "--check",
+            "--case",
+            "combined-paced-f4"
+          ],
+          "input_sha256": "8c5bce93d2f92d2e7860b031a364f30a8418105d4010e9b42313defc539f27c6",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            2
+          ],
+          "frames": 4,
+          "paced": true,
+          "combined_cpu_rtf": 1.598348193000001,
+          "native_cpu_rtf": 0.473,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 31472.557847335836,
+          "output_availability_ms_p95": 30137.086771435956,
+          "output_availability_over_190ms_packets": 1562,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "completion_script_sha256": "ec18d1a625435859fcdf6e32f67562ef9facc12223dc9c0c7ba5846db41164d3",
+          "completion_extractor_script_sha256": "05512834e2fb111641235f065343af11e91084730c05319630087dd649dc261d",
+          "source_hash_capture": "completion only; files may have changed during the run; not guaranteed to identify loaded code",
+          "acoustics": [
+            {
+              "seconds": [
+                3,
+                8
+              ],
+              "target_projection_gain": -1.0219868421554565,
+              "competitor_projection_gain": -0.1561329960823059,
+              "target_to_competitor_projection_improvement_db": 16.319011688232422,
+              "output_si_sdr_db": 14.270425796508789,
+              "mixture_si_sdr_db": 5.704476833343506
+            },
+            {
+              "seconds": [
+                8.5,
+                13.5
+              ],
+              "target_projection_gain": -1.0182751417160034,
+              "competitor_projection_gain": -0.058535054326057434,
+              "target_to_competitor_projection_improvement_db": 24.80898094177246,
+              "output_si_sdr_db": 15.94685173034668,
+              "mixture_si_sdr_db": 7.493766784667969
+            },
+            {
+              "seconds": [
+                13.7,
+                33.47
+              ],
+              "competitor_only_reduction_db": 41.18549346923828
+            },
+            {
+              "seconds": [
+                42.03,
+                48
+              ],
+              "target_projection_gain": -1.000537633895874,
+              "competitor_projection_gain": 0.0,
+              "competitor_absent": true,
+              "output_si_sdr_db": 13.148098945617676,
+              "mixture_si_sdr_db": 18.004133224487305
+            }
+          ]
+        }
+      },
+      {
+        "case": "extraction-only-paced-f8",
+        "artifact": "target/target-speaker-extraction/extraction-only-paced-f8.json",
+        "metadata_sha256": "4a0ca4f8436761b9db64ebfa503118d718893c5f5350a299fae7ff4256d60102",
+        "output_sha256": "8358daa1f05322d1f833c42530c51c88ca6f9092d6397e906b499d7e9685dd06",
+        "measurement": {
+          "wall_rtf": 0.8032764031399756,
+          "process_cpu_rtf": 0.7925224417399974,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 51.29478947253995,
+          "chunk_cost_ms_p95": 66.53327599997283,
+          "chunk_cost_ms_max": 85.09440599982554,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 978.5298619999594,
+          "priming_cpu_ms": 964.1110449999992,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": {
+            "resampler_max_abs_error": 0.0,
+            "native_chunk_partition_max_abs_error": 0.0,
+            "extractor": {
+              "upstream_max_abs_error": 2.0489096641540527e-08,
+              "future_input_max_abs_error": 0.0,
+              "chunk_partition_max_abs_error": 5.21540641784668e-08,
+              "reset_max_abs_error": 0.0,
+              "backend_future_input_max_abs_error": 0.0,
+              "backend_vs_torch_rmse": 0.0014605518663302064
+            }
+          },
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "8",
+            "--paced",
+            "--check",
+            "--extractor-only",
+            "--case",
+            "extraction-only-paced-f8"
+          ],
+          "input_sha256": "8c5bce93d2f92d2e7860b031a364f30a8418105d4010e9b42313defc539f27c6",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            2
+          ],
+          "frames": 8,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 0.7925307490599974,
+          "combined_wall_rtf": 0.8032847010399746,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 337.2895713334723,
+          "output_availability_ms_p95": 207.252101283436,
+          "output_availability_over_190ms_packets": 44,
+          "paced_actual_availability_ms_max": 337.55551699994066,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "completion_script_sha256": "5c1bcad1d2ae2634f28040c5433233848181b5ad4c76959cfcb7e098c78013fc",
+          "completion_extractor_script_sha256": "05512834e2fb111641235f065343af11e91084730c05319630087dd649dc261d",
+          "source_hash_capture": "completion only; files may have changed during the run; not guaranteed to identify loaded code",
+          "acoustics": [
+            {
+              "seconds": [
+                3,
+                8
+              ],
+              "target_projection_gain": -1.0570069551467896,
+              "competitor_projection_gain": -0.21931949257850647,
+              "target_to_competitor_projection_improvement_db": 13.660012245178223,
+              "output_si_sdr_db": 13.305854797363281,
+              "mixture_si_sdr_db": 5.704476833343506
+            },
+            {
+              "seconds": [
+                8.5,
+                13.5
+              ],
+              "target_projection_gain": -1.0564467906951904,
+              "competitor_projection_gain": -0.09309666603803635,
+              "target_to_competitor_projection_improvement_db": 21.098270416259766,
+              "output_si_sdr_db": 15.995421409606934,
+              "mixture_si_sdr_db": 7.493766784667969
+            },
+            {
+              "seconds": [
+                13.7,
+                33.47
+              ],
+              "competitor_only_reduction_db": 19.25216293334961
+            },
+            {
+              "seconds": [
+                42.03,
+                48
+              ],
+              "target_projection_gain": -1.0583436489105225,
+              "competitor_projection_gain": 0.0,
+              "competitor_absent": true,
+              "output_si_sdr_db": 15.825002670288086,
+              "mixture_si_sdr_db": 18.004133224487305
+            }
+          ]
+        }
+      },
+      {
+        "case": "extraction-only-paced-f4",
+        "artifact": "target/target-speaker-extraction/extraction-only-paced-f4.json",
+        "metadata_sha256": "1e15e771def7755f5e4ac5801e46df129bd98ce11b5c1d50dca86806a6165b61",
+        "output_sha256": "1a28c6d340e11541e74d26128012255e8bd50a81902e8c37c56abedd8840e030",
+        "measurement": {
+          "wall_rtf": 0.9741015993599694,
+          "process_cpu_rtf": 0.9599888263599956,
+          "chunk_ms": 32,
+          "chunk_cost_ms_mean": 31.141355478259896,
+          "chunk_cost_ms_p95": 40.65244125000617,
+          "chunk_cost_ms_max": 59.74211199986712,
+          "input_readiness_ms_max": 56.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 853.1661739998526,
+          "priming_cpu_ms": 843.1158370000027,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": {
+            "resampler_max_abs_error": 0.0,
+            "native_chunk_partition_max_abs_error": 0.0,
+            "extractor": {
+              "upstream_max_abs_error": 1.3969838619232178e-08,
+              "future_input_max_abs_error": 0.0,
+              "chunk_partition_max_abs_error": 5.960464477539063e-08,
+              "reset_max_abs_error": 0.0,
+              "backend_future_input_max_abs_error": 0.0,
+              "backend_vs_torch_rmse": 0.00110716768540442
+            }
+          },
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "07522318098eac111bbabb2e8aaf62bfbb5621088eeedb2577868d2f66773bf0",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "4",
+            "--paced",
+            "--check",
+            "--extractor-only",
+            "--case",
+            "extraction-only-paced-f4"
+          ],
+          "input_sha256": "8c5bce93d2f92d2e7860b031a364f30a8418105d4010e9b42313defc539f27c6",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            2
+          ],
+          "frames": 4,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 0.9599963241599957,
+          "combined_wall_rtf": 0.9741091076999692,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 760.4289233333432,
+          "output_availability_ms_p95": 705.2075003333683,
+          "output_availability_over_190ms_packets": 724,
+          "paced_actual_availability_ms_max": 773.3715630001752,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "completion_script_sha256": "5c1bcad1d2ae2634f28040c5433233848181b5ad4c76959cfcb7e098c78013fc",
+          "completion_extractor_script_sha256": "05512834e2fb111641235f065343af11e91084730c05319630087dd649dc261d",
+          "source_hash_capture": "completion only; files may have changed during the run; not guaranteed to identify loaded code",
+          "acoustics": [
+            {
+              "seconds": [
+                3,
+                8
+              ],
+              "target_projection_gain": -1.0574208498001099,
+              "competitor_projection_gain": -0.21323159337043762,
+              "target_to_competitor_projection_improvement_db": 13.907926559448242,
+              "output_si_sdr_db": 13.319402694702148,
+              "mixture_si_sdr_db": 5.704476833343506
+            },
+            {
+              "seconds": [
+                8.5,
+                13.5
+              ],
+              "target_projection_gain": -1.0593034029006958,
+              "competitor_projection_gain": -0.09354297816753387,
+              "target_to_competitor_projection_improvement_db": 21.080184936523438,
+              "output_si_sdr_db": 16.06491470336914,
+              "mixture_si_sdr_db": 7.493766784667969
+            },
+            {
+              "seconds": [
+                13.7,
+                33.47
+              ],
+              "competitor_only_reduction_db": 19.200294494628906
+            },
+            {
+              "seconds": [
+                42.03,
+                48
+              ],
+              "target_projection_gain": -1.059721827507019,
+              "competitor_projection_gain": 0.0,
+              "competitor_absent": true,
+              "output_si_sdr_db": 15.787191390991211,
+              "mixture_si_sdr_db": 18.004133224487305
+            }
+          ]
+        }
+      },
+      {
+        "case": "extraction-only-paced-b4",
+        "artifact": "target/target-speaker-extraction/extraction-only-paced-b4.json",
+        "metadata_sha256": "c755fa5c04af836bde168fe300743de1d0b5d695614193cd9a5aa79cd2089f05",
+        "output_sha256": "e948ae6484b111ae84c9e3334d9aae7feba8980ea21d7cad7d3155776ee7b0a8",
+        "measurement": {
+          "wall_rtf": 0.5272295159600844,
+          "process_cpu_rtf": 0.5190808487799979,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 33.66727432695303,
+          "chunk_cost_ms_p95": 45.757674100013894,
+          "chunk_cost_ms_max": 72.32507200001237,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 458.3983560000888,
+          "priming_cpu_ms": 453.4315289999995,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": {
+            "resampler_max_abs_error": 0.0,
+            "native_chunk_partition_max_abs_error": 0.0,
+            "extractor": {
+              "upstream_max_abs_error": 2.60770320892334e-08,
+              "future_input_max_abs_error": 0.0,
+              "chunk_partition_max_abs_error": 2.60770320892334e-08,
+              "reset_max_abs_error": 0.0,
+              "backend_future_input_max_abs_error": 0.0,
+              "backend_vs_torch_rmse": 0.0008725036750547588
+            }
+          },
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "557d33e6432beaadf04b10f22c6527d26de6aa94a8c9035508ade21f82baf4cb",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "8",
+            "--blocks",
+            "4",
+            "--paced",
+            "--check",
+            "--extractor-only",
+            "--case",
+            "extraction-only-paced-b4"
+          ],
+          "input_sha256": "8c5bce93d2f92d2e7860b031a364f30a8418105d4010e9b42313defc539f27c6",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            2
+          ],
+          "frames": 8,
+          "separation_blocks": 4,
+          "depth_ablation": true,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 0.5190901243999979,
+          "combined_wall_rtf": 0.5272389673800808,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 161.15840533335302,
+          "output_availability_ms_p95": 134.57114098335006,
+          "output_availability_over_190ms_packets": 0,
+          "paced_actual_availability_ms_max": 161.60703199998534,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "completion_script_sha256": "11a7bc77ce73466687521bdde6a7cd78da49e2f958c07c2bbbf5dde3ed009592",
+          "completion_extractor_script_sha256": "05512834e2fb111641235f065343af11e91084730c05319630087dd649dc261d",
+          "source_hash_capture": "completion only; files may have changed during the run; not guaranteed to identify loaded code",
+          "acoustics": [
+            {
+              "seconds": [
+                3,
+                8
+              ],
+              "target_projection_gain": -0.8392463326454163,
+              "competitor_projection_gain": -0.26250016689300537,
+              "target_to_competitor_projection_improvement_db": 10.095196723937988,
+              "output_si_sdr_db": 9.038040161132812,
+              "mixture_si_sdr_db": 5.704476833343506
+            },
+            {
+              "seconds": [
+                8.5,
+                13.5
+              ],
+              "target_projection_gain": -0.9083041548728943,
+              "competitor_projection_gain": -0.21359606087207794,
+              "target_to_competitor_projection_improvement_db": 12.572760581970215,
+              "output_si_sdr_db": 10.828594207763672,
+              "mixture_si_sdr_db": 7.493766784667969
+            },
+            {
+              "seconds": [
+                13.7,
+                33.47
+              ],
+              "competitor_only_reduction_db": 12.983479499816895
+            },
+            {
+              "seconds": [
+                42.03,
+                48
+              ],
+              "target_projection_gain": -0.8757210373878479,
+              "competitor_projection_gain": 0.0,
+              "competitor_absent": true,
+              "output_si_sdr_db": 11.930957794189453,
+              "mixture_si_sdr_db": 18.004133224487305
+            }
+          ]
+        }
+      },
+      {
+        "case": "extraction-only-paced-b4-repeat",
+        "artifact": "target/target-speaker-extraction/extraction-only-paced-b4-repeat.json",
+        "metadata_sha256": "cadc7444fce6d48bc952e23ef6e051fbb281b1a522f0145c467f9ac2c4523aa5",
+        "output_sha256": "f6c30005bf216016ab19a069bdc86cfd9defeee8d049b8191c73cde9ce22efac",
+        "measurement": {
+          "wall_rtf": 0.7737382172799698,
+          "process_cpu_rtf": 0.7458267581600008,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 49.408570707533194,
+          "chunk_cost_ms_p95": 64.99925589996563,
+          "chunk_cost_ms_max": 98.91171399999621,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 968.0276459998822,
+          "priming_cpu_ms": 918.6772220000004,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": null,
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "557d33e6432beaadf04b10f22c6527d26de6aa94a8c9035508ade21f82baf4cb",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "8",
+            "--blocks",
+            "4",
+            "--paced",
+            "--extractor-only",
+            "--case",
+            "extraction-only-paced-b4-repeat"
+          ],
+          "input_sha256": "8c5bce93d2f92d2e7860b031a364f30a8418105d4010e9b42313defc539f27c6",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            2
+          ],
+          "frames": 8,
+          "separation_blocks": 4,
+          "depth_ablation": true,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 0.7458388529800009,
+          "combined_wall_rtf": 0.7737505222599702,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 210.9301563335748,
+          "output_availability_ms_p95": 162.53142203332692,
+          "output_availability_over_190ms_packets": 7,
+          "paced_actual_availability_ms_max": 211.19603600005212,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "completion_script_sha256": "11a7bc77ce73466687521bdde6a7cd78da49e2f958c07c2bbbf5dde3ed009592",
+          "completion_extractor_script_sha256": "05512834e2fb111641235f065343af11e91084730c05319630087dd649dc261d",
+          "source_hash_capture": "completion only; files may have changed during the run; not guaranteed to identify loaded code"
+        }
+      },
+      {
+        "case": "extraction-only-paced-b5",
+        "artifact": "target/target-speaker-extraction/extraction-only-paced-b5.json",
+        "metadata_sha256": "267976a39e68274316047f2b254a9d942dece48412d13023d60d915545519d4d",
+        "output_sha256": "fad83942caf8f00c44baa6d17c0ca8b9af67f57309a917f5273f4066af87e477",
+        "measurement": {
+          "wall_rtf": 0.8723818630000096,
+          "process_cpu_rtf": 0.8571185479999945,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 55.70765408684608,
+          "chunk_cost_ms_p95": 75.20052120025866,
+          "chunk_cost_ms_max": 115.09680200015282,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 781.103837000046,
+          "priming_cpu_ms": 770.7714629999955,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": {
+            "resampler_max_abs_error": 0.0,
+            "native_chunk_partition_max_abs_error": 0.0,
+            "extractor": {
+              "upstream_max_abs_error": 2.2351741790771484e-08,
+              "future_input_max_abs_error": 0.0,
+              "chunk_partition_max_abs_error": 2.9802322387695312e-08,
+              "reset_max_abs_error": 0.0,
+              "backend_future_input_max_abs_error": 0.0,
+              "backend_vs_torch_rmse": 0.0007995546329766512
+            }
+          },
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "40b98410454bee16e49872d7af624d0f3e6560f7823c7d88f1aa22cf039896b2",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "8",
+            "--blocks",
+            "5",
+            "--paced",
+            "--check",
+            "--export",
+            "--extractor-only",
+            "--case",
+            "extraction-only-paced-b5"
+          ],
+          "input_sha256": "8c5bce93d2f92d2e7860b031a364f30a8418105d4010e9b42313defc539f27c6",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            2
+          ],
+          "frames": 8,
+          "separation_blocks": 5,
+          "depth_ablation": true,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 0.8571257113199945,
+          "combined_wall_rtf": 0.8723890278600084,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 419.0516023340578,
+          "output_availability_ms_p95": 297.0789415335936,
+          "output_availability_over_190ms_packets": 162,
+          "paced_actual_availability_ms_max": 419.4010719998332,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "completion_script_sha256": "87f22d0be221a1c6b164bc293ab474a4df1db220f4533014d2f94a4a9c1a1578",
+          "completion_extractor_script_sha256": "d86548417bc8e772532fa1d84156532276a591262a50ab5613c319d186a83c47",
+          "source_hash_capture": "completion only; files may have changed during the run; not guaranteed to identify loaded code",
+          "acoustics": [
+            {
+              "seconds": [
+                3,
+                8
+              ],
+              "target_projection_gain": -0.9248380064964294,
+              "competitor_projection_gain": -0.24918968975543976,
+              "target_to_competitor_projection_improvement_db": 11.39071273803711,
+              "output_si_sdr_db": 10.057568550109863,
+              "mixture_si_sdr_db": 5.704476833343506
+            },
+            {
+              "seconds": [
+                8.5,
+                13.5
+              ],
+              "target_projection_gain": -0.971383810043335,
+              "competitor_projection_gain": -0.19316457211971283,
+              "target_to_competitor_projection_improvement_db": 14.029268264770508,
+              "output_si_sdr_db": 12.04427719116211,
+              "mixture_si_sdr_db": 7.493766784667969
+            },
+            {
+              "seconds": [
+                13.7,
+                33.47
+              ],
+              "competitor_only_reduction_db": 14.344061851501465
+            },
+            {
+              "seconds": [
+                42.03,
+                48
+              ],
+              "target_projection_gain": -0.9844769239425659,
+              "competitor_projection_gain": 0.0,
+              "competitor_absent": true,
+              "output_si_sdr_db": 13.60340690612793,
+              "mixture_si_sdr_db": 18.004133224487305
+            }
+          ]
+        }
+      },
+      {
+        "case": "extraction-only-paced-b6-t2",
+        "artifact": "target/target-speaker-extraction/extraction-only-paced-b6-t2.json",
+        "metadata_sha256": "a67619d8ace9904c74d3aa4ae99f64117d261c1a158aca47f64f8770d89aca0e",
+        "output_sha256": "25683632439753481838cdd56db8958c00aa8ac690cf5dbb6cad6b21f04e4eb6",
+        "measurement": {
+          "wall_rtf": 1.0018115863600543,
+          "process_cpu_rtf": 1.9306263407399982,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 63.97264280715544,
+          "chunk_cost_ms_p95": 88.18941650019948,
+          "chunk_cost_ms_max": 138.24904500006596,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 769.4469210000534,
+          "priming_cpu_ms": 1516.354376999999,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": {
+            "resampler_max_abs_error": 0.0,
+            "native_chunk_partition_max_abs_error": 0.0,
+            "extractor": {
+              "upstream_max_abs_error": 2.0489096641540527e-08,
+              "future_input_max_abs_error": 0.0,
+              "chunk_partition_max_abs_error": 5.21540641784668e-08,
+              "reset_max_abs_error": 0.0,
+              "backend_future_input_max_abs_error": 0.0,
+              "backend_vs_torch_rmse": 0.0015065112384036183
+            }
+          },
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "8",
+            "--blocks",
+            "6",
+            "--ort-threads",
+            "2",
+            "--paced",
+            "--check",
+            "--extractor-only",
+            "--case",
+            "extraction-only-paced-b6-t2"
+          ],
+          "input_sha256": "8c5bce93d2f92d2e7860b031a364f30a8418105d4010e9b42313defc539f27c6",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            0,
+            2
+          ],
+          "frames": 8,
+          "ort_threads": 2,
+          "separation_blocks": 6,
+          "depth_ablation": false,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 1.9306340299799982,
+          "combined_wall_rtf": 1.0018193034800515,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 3293.081863339488,
+          "output_availability_ms_p95": 3173.6235291383437,
+          "output_availability_over_190ms_packets": 591,
+          "paced_actual_availability_ms_max": 3303.215745999987,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "completion_script_sha256": "51cf46e75526f8c357cc31fe383e40a67e6c1ea4da15511576e84e4bcfc5af2e",
+          "completion_extractor_script_sha256": "d86548417bc8e772532fa1d84156532276a591262a50ab5613c319d186a83c47",
+          "source_hash_capture": "completion only; files may have changed during the run; not guaranteed to identify loaded code"
+        }
+      },
+      {
+        "case": "extraction-only-paced-b6-t2-nospin",
+        "artifact": "target/target-speaker-extraction/extraction-only-paced-b6-t2-nospin.json",
+        "metadata_sha256": "04d24ce98b4b8ef29ab0e22e604b85286ccfd618a604784daac035e35448dc68",
+        "output_sha256": "150f5f3853982e6e2f0d9c1c69dd9a241b452c09bb36e8320016ea0eae2af655",
+        "measurement": {
+          "wall_rtf": 1.0242108334000932,
+          "process_cpu_rtf": 1.5689413662999985,
+          "stream_process_cpu_rtf": 1.5694688616999999,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 64.82347046836033,
+          "chunk_cost_ms_p95": 86.72261249989788,
+          "chunk_cost_ms_max": 105.51472499992087,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 1056.8663429999106,
+          "priming_cpu_ms": 1605.0856389999994,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": null,
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "8",
+            "--blocks",
+            "6",
+            "--ort-threads",
+            "2",
+            "--no-spin",
+            "--paced",
+            "--extractor-only",
+            "--mixture",
+            "target/target-speaker-extraction/public-mixture.wav",
+            "--case",
+            "extraction-only-paced-b6-t2-nospin"
+          ],
+          "input_sha256": "4ec4ee3e1420b031208ae6f85d51ab889c6594c1c6179e18d5db05fbe793ba00",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            0,
+            2
+          ],
+          "frames": 8,
+          "ort_threads": 2,
+          "ort_spinning": false,
+          "separation_blocks": 6,
+          "depth_ablation": false,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 1.5695155522,
+          "combined_wall_rtf": 1.024257582700102,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 647.6832193345236,
+          "output_availability_ms_p95": 623.7385221342703,
+          "output_availability_over_190ms_packets": 132,
+          "paced_actual_availability_ms_max": 650.8294390002375,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "completion_script_sha256": "6e43a13f8b707b0e2c33d1ac3d363394fb537910955bd8a0c109d8fe58cae287",
+          "completion_extractor_script_sha256": "de4b1c61d065516235f16db7d217ccca9284c22b2949150cce38c673822daa2f",
+          "source_hash_capture": "completion only; files may have changed during the run; not guaranteed to identify loaded code"
+        }
+      },
+      {
+        "case": "extraction-only-paced-b4-f4",
+        "artifact": "target/target-speaker-extraction/extraction-only-paced-b4-f4.json",
+        "metadata_sha256": "bd6d7df12b8c8dbee5bf19046ed7862747cde708fb868d063e85fd27e558c3d5",
+        "output_sha256": "6d4c8ec62ce5cd4910d8e52cce0003fe023ce6e6e1fdba2b164df81906fb6277",
+        "measurement": {
+          "wall_rtf": 0.5484536365799522,
+          "process_cpu_rtf": 0.5398012408599995,
+          "stream_process_cpu_rtf": 0.5410658687000001,
+          "chunk_ms": 32,
+          "chunk_cost_ms_mean": 17.53368403388594,
+          "chunk_cost_ms_p95": 28.874994600027996,
+          "chunk_cost_ms_max": 42.254474999936065,
+          "input_readiness_ms_max": 56.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 462.51172499978566,
+          "priming_cpu_ms": 458.38163100000173,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": {
+            "resampler_max_abs_error": 0.0,
+            "native_chunk_partition_max_abs_error": 0.0,
+            "extractor": {
+              "upstream_max_abs_error": 2.60770320892334e-08,
+              "future_input_max_abs_error": 0.0,
+              "chunk_partition_max_abs_error": 2.60770320892334e-08,
+              "reset_max_abs_error": 0.0,
+              "backend_future_input_max_abs_error": 0.0,
+              "backend_vs_torch_rmse": 0.0004654079384636134
+            }
+          },
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "10566ab8789c899f0a3de3b5da5fdf2d2a87273cfd347be7ddbcd193e8a56221",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "4",
+            "--blocks",
+            "4",
+            "--paced",
+            "--check",
+            "--export",
+            "--extractor-only",
+            "--case",
+            "extraction-only-paced-b4-f4"
+          ],
+          "input_sha256": "8c5bce93d2f92d2e7860b031a364f30a8418105d4010e9b42313defc539f27c6",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            2
+          ],
+          "frames": 4,
+          "ort_threads": 1,
+          "ort_spinning": true,
+          "separation_blocks": 4,
+          "depth_ablation": true,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 0.5410723941600001,
+          "combined_wall_rtf": 0.5484601637399554,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 182.85833333340662,
+          "output_availability_ms_p95": 86.68236253313103,
+          "output_availability_over_190ms_packets": 0,
+          "paced_actual_availability_ms_max": 183.77856900022744,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "completion_script_sha256": "b3ef15c75b0791ca7f62daa711622dc0264844a57c0055dd29c91a5c0d5e9ec7",
+          "completion_extractor_script_sha256": "a32ab547c7bc89863a51ded7961c841a30f32a9d7bd38200cf4cf2eafcd892ee",
+          "source_hash_capture": "completion only; files may have changed during the run; not guaranteed to identify loaded code",
+          "acoustics": [
+            {
+              "seconds": [
+                3,
+                8
+              ],
+              "target_projection_gain": -0.8364611268043518,
+              "competitor_projection_gain": -0.2639683485031128,
+              "target_to_competitor_projection_improvement_db": 10.017877578735352,
+              "output_si_sdr_db": 8.971030235290527,
+              "mixture_si_sdr_db": 5.704476833343506
+            },
+            {
+              "seconds": [
+                8.5,
+                13.5
+              ],
+              "target_projection_gain": -0.9061837196350098,
+              "competitor_projection_gain": -0.21458475291728973,
+              "target_to_competitor_projection_improvement_db": 12.512348175048828,
+              "output_si_sdr_db": 10.793098449707031,
+              "mixture_si_sdr_db": 7.493766784667969
+            },
+            {
+              "seconds": [
+                13.7,
+                33.47
+              ],
+              "competitor_only_reduction_db": 12.954197883605957
+            },
+            {
+              "seconds": [
+                42.03,
+                48
+              ],
+              "target_projection_gain": -0.8786475658416748,
+              "competitor_projection_gain": 0.0,
+              "competitor_absent": true,
+              "output_si_sdr_db": 12.002097129821777,
+              "mixture_si_sdr_db": 18.004133224487305
+            }
+          ]
+        }
+      },
+      {
+        "case": "extraction-only-paced-b4-f4-repeat",
+        "artifact": "target/target-speaker-extraction/extraction-only-paced-b4-f4-repeat.json",
+        "metadata_sha256": "9e6f46a4e5593b18b5b5b674bb95418bf46658bb6d4461ef42cb0407c5a16d84",
+        "output_sha256": "3d6765ca9529696091c4772964ee141633fa6f7bedc491844c7fbac9515ec62a",
+        "measurement": {
+          "wall_rtf": 0.7354890811798849,
+          "process_cpu_rtf": 0.72043526696,
+          "stream_process_cpu_rtf": 0.7217175968,
+          "chunk_ms": 32,
+          "chunk_cost_ms_mean": 23.513078042835197,
+          "chunk_cost_ms_p95": 31.794555599981322,
+          "chunk_cost_ms_max": 49.24338999990141,
+          "input_readiness_ms_max": 56.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 635.0590379997811,
+          "priming_cpu_ms": 628.6326590000009,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": {
+            "resampler_max_abs_error": 0.0,
+            "native_chunk_partition_max_abs_error": 0.0,
+            "extractor": {
+              "upstream_max_abs_error": 2.60770320892334e-08,
+              "future_input_max_abs_error": 0.0,
+              "chunk_partition_max_abs_error": 2.60770320892334e-08,
+              "reset_max_abs_error": 0.0,
+              "backend_future_input_max_abs_error": 0.0,
+              "backend_vs_torch_rmse": 0.0004654079384636134
+            }
+          },
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "10566ab8789c899f0a3de3b5da5fdf2d2a87273cfd347be7ddbcd193e8a56221",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "script_sha256": "3a71117e8e0fe0f58c3dcf326b6cbdfde853104e4011bb4eedfb31350476fb8a",
+          "extractor_script_sha256": "a32ab547c7bc89863a51ded7961c841a30f32a9d7bd38200cf4cf2eafcd892ee",
+          "source_hash_capture": "startup; extractor executed from captured bytes",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "4",
+            "--blocks",
+            "4",
+            "--paced",
+            "--check",
+            "--extractor-only",
+            "--case",
+            "extraction-only-paced-b4-f4-repeat"
+          ],
+          "input_sha256": "8c5bce93d2f92d2e7860b031a364f30a8418105d4010e9b42313defc539f27c6",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            2
+          ],
+          "frames": 4,
+          "ort_threads": 1,
+          "ort_spinning": true,
+          "separation_blocks": 4,
+          "depth_ablation": true,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 0.7217322834000001,
+          "combined_wall_rtf": 0.7355042685598799,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 121.91263533284413,
+          "output_availability_ms_p95": 92.59257413332857,
+          "output_availability_over_190ms_packets": 0,
+          "paced_actual_availability_ms_max": 121.86758100020961,
+          "input_resample_lookahead_ms": 0.3958333333333333
+        }
+      },
+      {
+        "case": "extraction-only-paced-b4-f4-quiet",
+        "artifact": "target/target-speaker-extraction/extraction-only-paced-b4-f4-quiet.json",
+        "metadata_sha256": "c5d994b4a08543e9ac699c1ed00a3ec6f09634946b98ce0225ade5e10ddd2d6b",
+        "output_sha256": "894559d96d18e98b23626ab2db576324d11459fc2295cd842dbefae87b7d0331",
+        "measurement": {
+          "wall_rtf": 0.8627348110002003,
+          "process_cpu_rtf": 0.8192222026999982,
+          "stream_process_cpu_rtf": 0.8203427042,
+          "chunk_ms": 32,
+          "chunk_cost_ms_mean": 27.47563092357326,
+          "chunk_cost_ms_p95": 37.83962309987601,
+          "chunk_cost_ms_max": 132.77919499978452,
+          "input_readiness_ms_max": 56.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 606.3502270003482,
+          "priming_cpu_ms": 587.993622,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": null,
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "10566ab8789c899f0a3de3b5da5fdf2d2a87273cfd347be7ddbcd193e8a56221",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "script_sha256": "3a71117e8e0fe0f58c3dcf326b6cbdfde853104e4011bb4eedfb31350476fb8a",
+          "extractor_script_sha256": "a32ab547c7bc89863a51ded7961c841a30f32a9d7bd38200cf4cf2eafcd892ee",
+          "source_hash_capture": "startup; extractor executed from captured bytes",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "4",
+            "--blocks",
+            "4",
+            "--paced",
+            "--extractor-only",
+            "--mixture",
+            "target/target-speaker-extraction/quiet-alone-mixture.wav",
+            "--case",
+            "extraction-only-paced-b4-f4-quiet"
+          ],
+          "input_sha256": "c27deef3196d2a6c6cbbd0f68b7297b1f7d2ff3b47461c91ecbdbde4c580d511",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            2
+          ],
+          "frames": 4,
+          "ort_threads": 1,
+          "ort_spinning": true,
+          "separation_blocks": 4,
+          "depth_ablation": true,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 0.8203928349,
+          "combined_wall_rtf": 0.862784969400218,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 576.8406713361012,
+          "output_availability_ms_p95": 550.3006968356962,
+          "output_availability_over_190ms_packets": 85,
+          "paced_actual_availability_ms_max": 578.6616909998666,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "acoustics": [
+            {
+              "seconds": [
+                0,
+                3
+              ],
+              "target_projection_gain": -0.8281713128089905,
+              "competitor_projection_gain": 0.0,
+              "competitor_absent": true,
+              "output_si_sdr_db": 7.420200347900391,
+              "mixture_si_sdr_db": 6.967108726501465
+            },
+            {
+              "seconds": [
+                3.2,
+                6.8
+              ],
+              "noise_only_reduction_db": 5.645659446716309
+            },
+            {
+              "seconds": [
+                7,
+                10
+              ],
+              "target_projection_gain": -0.8159143328666687,
+              "competitor_projection_gain": 0.0,
+              "competitor_absent": true,
+              "output_si_sdr_db": 7.4759063720703125,
+              "mixture_si_sdr_db": 6.893184185028076
+            }
+          ]
+        }
+      },
+      {
+        "case": "extraction-only-b4-f4-libri-target",
+        "artifact": "target/target-speaker-extraction/extraction-only-b4-f4-libri-target.json",
+        "metadata_sha256": "5eb9cbffc15c50fc6d4e04b22f3ae611b75e3f25c3674165f0f36951e4e8a4a7",
+        "output_sha256": "021f2e8ba2411b3ed7a4c9cc3c32ab52339aac21f92e247017e6cd8a1f550d98",
+        "measurement": {
+          "wall_rtf": 0.8576993073999801,
+          "process_cpu_rtf": 0.8414939816999997,
+          "stream_process_cpu_rtf": 0.8426844216999999,
+          "chunk_ms": 32,
+          "chunk_cost_ms_mean": 27.315264566878348,
+          "chunk_cost_ms_p95": 34.980375200052535,
+          "chunk_cost_ms_max": 48.001391000070726,
+          "input_readiness_ms_max": 56.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 861.851760999798,
+          "priming_cpu_ms": 848.3771510000003,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": null,
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "10566ab8789c899f0a3de3b5da5fdf2d2a87273cfd347be7ddbcd193e8a56221",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "script_sha256": "3a71117e8e0fe0f58c3dcf326b6cbdfde853104e4011bb4eedfb31350476fb8a",
+          "extractor_script_sha256": "a32ab547c7bc89863a51ded7961c841a30f32a9d7bd38200cf4cf2eafcd892ee",
+          "source_hash_capture": "startup; extractor executed from captured bytes",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "4",
+            "--blocks",
+            "4",
+            "--paced",
+            "--extractor-only",
+            "--mixture",
+            "tests/fixtures/voice-evaluation.flac",
+            "--enrollment",
+            "tests/fixtures/voice-enrollment.flac",
+            "--case",
+            "extraction-only-b4-f4-libri-target"
+          ],
+          "input_sha256": "47eae56040bec3eb63049c03cd2a1634b4ea8f50d37fe768b1b216d4d4606653",
+          "enrollment_sha256": "f01cffd7a33fc29a1d9f2f0ac277fc8656c0794abe015ee5cc8dc55351fb6cba",
+          "cpu_affinity": [
+            2
+          ],
+          "frames": 4,
+          "ort_threads": 1,
+          "ort_spinning": true,
+          "separation_blocks": 4,
+          "depth_ablation": true,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 0.8427143201999998,
+          "combined_wall_rtf": 0.8577292928000133,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 139.97950933354986,
+          "output_availability_ms_p95": 129.2045670334336,
+          "output_availability_over_190ms_packets": 0,
+          "paced_actual_availability_ms_max": 140.04112800000803,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "acoustics": [
+            {
+              "seconds": [
+                0,
+                3
+              ],
+              "target_projection_gain": -0.8142640590667725,
+              "competitor_projection_gain": -0.3551788926124573,
+              "target_to_competitor_projection_improvement_db": 7.206362724304199,
+              "output_si_sdr_db": 4.101198196411133,
+              "mixture_si_sdr_db": 0.04998131841421127
+            },
+            {
+              "seconds": [
+                3.2,
+                6.8
+              ],
+              "competitor_only_reduction_db": 14.126906394958496
+            },
+            {
+              "seconds": [
+                7,
+                10
+              ],
+              "target_projection_gain": -0.7220211029052734,
+              "competitor_projection_gain": -0.2291993349790573,
+              "target_to_competitor_projection_improvement_db": 9.966730117797852,
+              "output_si_sdr_db": 3.2684459686279297,
+              "mixture_si_sdr_db": -1.6044985055923462
+            }
+          ]
+        }
+      },
+      {
+        "case": "extraction-only-b4-f4-libri-swapped",
+        "artifact": "target/target-speaker-extraction/extraction-only-b4-f4-libri-swapped.json",
+        "metadata_sha256": "122f6f0546edaffb31464111f557c1687bb9c3f202dfa000661099d272962b17",
+        "output_sha256": "4df38ff34acb6501557c2670bc99180158c28a9e690a379b8c5f0c463bd0de01",
+        "measurement": {
+          "wall_rtf": 0.8339742732003288,
+          "process_cpu_rtf": 0.8191593460999984,
+          "stream_process_cpu_rtf": 0.8205513525000001,
+          "chunk_ms": 32,
+          "chunk_cost_ms_mean": 26.559690229309833,
+          "chunk_cost_ms_p95": 35.10497460001716,
+          "chunk_cost_ms_max": 40.23948699978064,
+          "input_readiness_ms_max": 56.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 776.4507600004436,
+          "priming_cpu_ms": 764.8110820000005,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": null,
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "10566ab8789c899f0a3de3b5da5fdf2d2a87273cfd347be7ddbcd193e8a56221",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "script_sha256": "3a71117e8e0fe0f58c3dcf326b6cbdfde853104e4011bb4eedfb31350476fb8a",
+          "extractor_script_sha256": "a32ab547c7bc89863a51ded7961c841a30f32a9d7bd38200cf4cf2eafcd892ee",
+          "source_hash_capture": "startup; extractor executed from captured bytes",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "4",
+            "--blocks",
+            "4",
+            "--paced",
+            "--extractor-only",
+            "--mixture",
+            "tests/fixtures/voice-evaluation.flac",
+            "--enrollment",
+            "target/target-speaker-extraction/competitor-enrollment.wav",
+            "--case",
+            "extraction-only-b4-f4-libri-swapped"
+          ],
+          "input_sha256": "47eae56040bec3eb63049c03cd2a1634b4ea8f50d37fe768b1b216d4d4606653",
+          "enrollment_sha256": "aa7fbc8eaa9b01124fa848080b648f008fa75abb248e1621e877cfb72e8edb46",
+          "cpu_affinity": [
+            2
+          ],
+          "frames": 4,
+          "ort_threads": 1,
+          "ort_spinning": true,
+          "separation_blocks": 4,
+          "depth_ablation": true,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 0.8206019987000002,
+          "combined_wall_rtf": 0.834025823200318,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 174.90378233405403,
+          "output_availability_ms_p95": 130.90475243428025,
+          "output_availability_over_190ms_packets": 0,
+          "paced_actual_availability_ms_max": 175.38799099988682,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "acoustics": [
+            {
+              "seconds": [
+                0,
+                3
+              ],
+              "target_projection_gain": -0.6328367590904236,
+              "competitor_projection_gain": -0.6004319787025452,
+              "target_to_competitor_projection_improvement_db": 0.4565579295158386,
+              "output_si_sdr_db": -1.0517690181732178,
+              "mixture_si_sdr_db": -0.23998065292835236
+            },
+            {
+              "seconds": [
+                3.2,
+                6.8
+              ],
+              "target_projection_gain": -0.675713837146759,
+              "competitor_projection_gain": 0.0,
+              "competitor_absent": true,
+              "output_si_sdr_db": 10.967584609985352,
+              "mixture_si_sdr_db": 67.97042846679688
+            },
+            {
+              "seconds": [
+                7,
+                10
+              ],
+              "target_projection_gain": -0.715598464012146,
+              "competitor_projection_gain": -0.46190786361694336,
+              "target_to_competitor_projection_improvement_db": 3.802280902862549,
+              "output_si_sdr_db": 2.6633799076080322,
+              "mixture_si_sdr_db": 0.9359675645828247
+            }
+          ]
+        }
+      },
+      {
+        "case": "extraction-only-b4-f4-quiet-unpinned",
+        "artifact": "target/target-speaker-extraction/extraction-only-b4-f4-quiet-unpinned.json",
+        "metadata_sha256": "81ff87b05a62dd4a1235ad7a3091c7cc836fcde613e92feb8e73c749ac2723c1",
+        "output_sha256": "fc60d8dab3da549c48b569fa3b476b1378bd3dcbd93ed966e531779b0de8f8f5",
+        "measurement": {
+          "wall_rtf": 0.4717234095985077,
+          "process_cpu_rtf": 0.4667033792999996,
+          "stream_process_cpu_rtf": 0.46762533910000015,
+          "chunk_ms": 32,
+          "chunk_cost_ms_mean": 15.023038522245468,
+          "chunk_cost_ms_p95": 28.31509004995492,
+          "chunk_cost_ms_max": 40.021687999796995,
+          "input_readiness_ms_max": 56.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 493.2735100001082,
+          "priming_cpu_ms": 488.48428799999954,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": null,
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "10566ab8789c899f0a3de3b5da5fdf2d2a87273cfd347be7ddbcd193e8a56221",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "script_sha256": "3a71117e8e0fe0f58c3dcf326b6cbdfde853104e4011bb4eedfb31350476fb8a",
+          "extractor_script_sha256": "a32ab547c7bc89863a51ded7961c841a30f32a9d7bd38200cf4cf2eafcd892ee",
+          "source_hash_capture": "startup; extractor executed from captured bytes",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "4",
+            "--blocks",
+            "4",
+            "--paced",
+            "--extractor-only",
+            "--mixture",
+            "target/target-speaker-extraction/quiet-alone-mixture.wav",
+            "--case",
+            "extraction-only-b4-f4-quiet-unpinned"
+          ],
+          "input_sha256": "c27deef3196d2a6c6cbbd0f68b7297b1f7d2ff3b47461c91ecbdbde4c580d511",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "frames": 4,
+          "ort_threads": 1,
+          "ort_spinning": true,
+          "separation_blocks": 4,
+          "depth_ablation": true,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 0.46765569840000015,
+          "combined_wall_rtf": 0.4717543925984501,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 123.5035813326948,
+          "output_availability_ms_p95": 86.09811853363577,
+          "output_availability_over_190ms_packets": 0,
+          "paced_actual_availability_ms_max": 123.52086799989047,
+          "input_resample_lookahead_ms": 0.3958333333333333
+        }
+      },
+      {
+        "case": "extraction-only-b6-f4-quiet-unpinned",
+        "artifact": "target/target-speaker-extraction/extraction-only-b6-f4-quiet-unpinned.json",
+        "metadata_sha256": "31b3a60cf93d9990dad26c33da95d0502ce71b574ad6b1551eb210ee11939606",
+        "output_sha256": "aeb78ecf50c1d347639a857351cb7614a2bdf4fddee4a58ded015c3112ce79a0",
+        "measurement": {
+          "wall_rtf": 1.7270839046002038,
+          "process_cpu_rtf": 1.6916276148000011,
+          "stream_process_cpu_rtf": 1.6925915102000002,
+          "chunk_ms": 32,
+          "chunk_cost_ms_mean": 55.0026721210256,
+          "chunk_cost_ms_p95": 83.83418124981284,
+          "chunk_cost_ms_max": 112.85022599986405,
+          "input_readiness_ms_max": 56.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 1634.355546999359,
+          "priming_cpu_ms": 1611.984862999999,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": null,
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "07522318098eac111bbabb2e8aaf62bfbb5621088eeedb2577868d2f66773bf0",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "script_sha256": "3a71117e8e0fe0f58c3dcf326b6cbdfde853104e4011bb4eedfb31350476fb8a",
+          "extractor_script_sha256": "a32ab547c7bc89863a51ded7961c841a30f32a9d7bd38200cf4cf2eafcd892ee",
+          "source_hash_capture": "startup; extractor executed from captured bytes",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "4",
+            "--blocks",
+            "6",
+            "--paced",
+            "--extractor-only",
+            "--mixture",
+            "target/target-speaker-extraction/quiet-alone-mixture.wav",
+            "--case",
+            "extraction-only-b6-f4-quiet-unpinned"
+          ],
+          "input_sha256": "c27deef3196d2a6c6cbbd0f68b7297b1f7d2ff3b47461c91ecbdbde4c580d511",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "frames": 4,
+          "ort_threads": 1,
+          "ort_spinning": true,
+          "separation_blocks": 6,
+          "depth_ablation": false,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 1.6926447022000002,
+          "combined_wall_rtf": 1.7271380169002442,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 7392.6994063370585,
+          "output_availability_ms_p95": 7086.79239463546,
+          "output_availability_over_190ms_packets": 292,
+          "paced_actual_availability_ms_max": 7404.257407999452,
+          "input_resample_lookahead_ms": 0.3958333333333333
+        }
+      },
+      {
+        "case": "extraction-only-b6-f8-quiet-pool",
+        "artifact": "target/target-speaker-extraction/extraction-only-b6-f8-quiet-pool.json",
+        "metadata_sha256": "0245fa5ee19c058478d75c942072dbff9afdde015219ce3fb538f337cab33d86",
+        "output_sha256": "f98d021c69f823e956bcd86bf6539f8bebb5c14973e1716c348a0b43c06411ac",
+        "measurement": {
+          "wall_rtf": 0.8604011301003084,
+          "process_cpu_rtf": 0.8474057635000005,
+          "stream_process_cpu_rtf": 0.8482295495999999,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 54.45576772786762,
+          "chunk_cost_ms_p95": 67.35984865031241,
+          "chunk_cost_ms_max": 76.73757199972897,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 754.6662020004078,
+          "priming_cpu_ms": 746.5099700000009,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": null,
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "script_sha256": "75f78c161e81566385031ae5bc3a0f525e48c839a1b4b0b1030d58ab697625a4",
+          "extractor_script_sha256": "a32ab547c7bc89863a51ded7961c841a30f32a9d7bd38200cf4cf2eafcd892ee",
+          "source_hash_capture": "startup; extractor executed from captured bytes",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "8",
+            "--blocks",
+            "6",
+            "--paced",
+            "--extractor-only",
+            "--mixture",
+            "target/target-speaker-extraction/quiet-alone-mixture.wav",
+            "--case",
+            "extraction-only-b6-f8-quiet-pool"
+          ],
+          "input_sha256": "c27deef3196d2a6c6cbbd0f68b7297b1f7d2ff3b47461c91ecbdbde4c580d511",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frames": 8,
+          "ort_threads": 1,
+          "ort_spinning": true,
+          "separation_blocks": 6,
+          "depth_ablation": false,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 0.8482831315999998,
+          "combined_wall_rtf": 0.8604562021003404,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 188.0224343353305,
+          "output_availability_ms_p95": 162.24629483465,
+          "output_availability_over_190ms_packets": 0,
+          "paced_actual_availability_ms_max": 187.86165999968944,
+          "input_resample_lookahead_ms": 0.3958333333333333
+        }
+      },
+      {
+        "case": "openvino-b6-f8-quiet",
+        "artifact": "target/target-speaker-extraction/openvino-b6-f8-quiet.json",
+        "metadata_sha256": "f29b317fc899a785c97258597920d4c2f24a516c2d99ef2d161de492487418d6",
+        "output_sha256": "08d0ee9ea1734bbb466b4490846778da6833a270b8c6edb44c5d71c93014ff34",
+        "measurement": {
+          "wall_rtf": 1.4657645536998642,
+          "process_cpu_rtf": 1.4467893736999997,
+          "stream_process_cpu_rtf": 1.4471823563000001,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 92.76990846201673,
+          "chunk_cost_ms_p95": 112.18209890048459,
+          "chunk_cost_ms_max": 154.10677199997735,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 1370.175062999806,
+          "priming_cpu_ms": 1355.153014999999,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": {
+            "resampler_max_abs_error": 0.0,
+            "native_chunk_partition_max_abs_error": 0.0,
+            "extractor": {
+              "upstream_max_abs_error": 1.1175870895385742e-08,
+              "future_input_max_abs_error": 0.0,
+              "chunk_partition_max_abs_error": 1.1175870895385742e-08,
+              "reset_max_abs_error": 0.0,
+              "backend_future_input_max_abs_error": 0.0,
+              "backend_vs_torch_rmse": 0.0005568692577071488
+            }
+          },
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "515a80f549c00e7ee43574baa7c1f8b1d9d5cb67906fdc45d20c6086f03552f3",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "script_sha256": "9749a3655bd1c71e27cfee2ee33f3ccbd925e39613550b3b1ab2850f8359d499",
+          "extractor_script_sha256": "a32ab547c7bc89863a51ded7961c841a30f32a9d7bd38200cf4cf2eafcd892ee",
+          "source_hash_capture": "startup; extractor executed from captured bytes",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--backend",
+            "openvino",
+            "--frames",
+            "8",
+            "--blocks",
+            "6",
+            "--paced",
+            "--check",
+            "--extractor-only",
+            "--mixture",
+            "target/target-speaker-extraction/quiet-alone-mixture.wav",
+            "--case",
+            "openvino-b6-f8-quiet"
+          ],
+          "input_sha256": "c27deef3196d2a6c6cbbd0f68b7297b1f7d2ff3b47461c91ecbdbde4c580d511",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frames": 8,
+          "backend": "openvino",
+          "recurrent_precision": "fp32",
+          "ort_threads": 1,
+          "ort_spinning": true,
+          "separation_blocks": 6,
+          "depth_ablation": false,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 1.4472110411999999,
+          "combined_wall_rtf": 1.4657937471998592,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 4762.398302332729,
+          "output_availability_ms_p95": 4455.11167963235,
+          "output_availability_over_190ms_packets": 157,
+          "paced_actual_availability_ms_max": 4765.646063000517,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "openvino_version": "2026.3.1-22476-759c5a6ab8c-releases/2026/3",
+          "openvino_execution_counts": {
+            "ref_f32": 9,
+            "unknown_f32": 124,
+            "jit_avx2_f32": 194,
+            "jit_avx2_1x1_I8": 128,
+            "jit_uni_i8": 52,
+            "gemm_mlas_f32": 13,
+            "jit_avx2_i8": 87,
+            "jit_uni_f32": 36,
+            "ref_any_f32": 18
+          },
+          "openvino_lstm_execution_counts": {
+            "ref_any_f32": 18
+          }
+        }
+      },
+      {
+        "case": "openvino-b6-f8-quiet-dynamic",
+        "artifact": "target/target-speaker-extraction/openvino-b6-f8-quiet-dynamic.json",
+        "metadata_sha256": "6361a2d897d7a6d544a808ec77efcb5869e3f34d0262acb82ef6b2ae68adcaca",
+        "output_sha256": "236ad98d60fe763bc7a82a4f2894c646db6a6dcb6b896448cf226829ee3ff01e",
+        "measurement": {
+          "wall_rtf": 1.6674431136002568,
+          "process_cpu_rtf": 1.6517169976000088,
+          "stream_process_cpu_rtf": 1.6521366015999999,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 105.53437427849727,
+          "chunk_cost_ms_p95": 117.56786969986024,
+          "chunk_cost_ms_max": 125.59555400002864,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 1572.061525999743,
+          "priming_cpu_ms": 1558.8783970000009,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": {
+            "resampler_max_abs_error": 0.0,
+            "native_chunk_partition_max_abs_error": 0.0,
+            "extractor": {
+              "upstream_max_abs_error": 1.1175870895385742e-08,
+              "future_input_max_abs_error": 0.0,
+              "chunk_partition_max_abs_error": 1.1175870895385742e-08,
+              "reset_max_abs_error": 0.0,
+              "backend_future_input_max_abs_error": 0.0,
+              "backend_vs_torch_rmse": 0.0005613904213532805
+            }
+          },
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "script_sha256": "069eb4920530761e6ec5f05e02adab239dbaf91951169d760a38b8aa5d3055ce",
+          "extractor_script_sha256": "a32ab547c7bc89863a51ded7961c841a30f32a9d7bd38200cf4cf2eafcd892ee",
+          "source_hash_capture": "startup; extractor executed from captured bytes",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--backend",
+            "openvino",
+            "--frames",
+            "8",
+            "--blocks",
+            "6",
+            "--paced",
+            "--check",
+            "--extractor-only",
+            "--mixture",
+            "target/target-speaker-extraction/quiet-alone-mixture.wav",
+            "--case",
+            "openvino-b6-f8-quiet-dynamic"
+          ],
+          "input_sha256": "c27deef3196d2a6c6cbbd0f68b7297b1f7d2ff3b47461c91ecbdbde4c580d511",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frames": 8,
+          "backend": "openvino",
+          "recurrent_precision": "ONNX dynamic INT8; verify runtime profile",
+          "ort_threads": 1,
+          "ort_spinning": true,
+          "separation_blocks": 6,
+          "depth_ablation": false,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 1.6521662424000003,
+          "combined_wall_rtf": 1.667472826300218,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 6779.12466433601,
+          "output_availability_ms_p95": 6526.711168334653,
+          "output_availability_over_190ms_packets": 158,
+          "paced_actual_availability_ms_max": 6782.179515000265,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "openvino_version": "2026.3.1-22476-759c5a6ab8c-releases/2026/3",
+          "openvino_execution_counts": {
+            "ref_f32": 9,
+            "unknown_f32": 126,
+            "jit_avx2_f32": 250,
+            "jit_avx2_1x1_I8": 128,
+            "jit_uni_i8": 49,
+            "ref_I8": 26,
+            "jit_avx2_i32": 13,
+            "jit_uni_i32": 13,
+            "brgemm_avx2_f32": 13,
+            "jit_uni_f32": 49,
+            "ref_i32": 13,
+            "reorder_f32": 1,
+            "jit_avx2_i8": 87,
+            "ref_any_f32": 18,
+            "jit_f32": 6
+          },
+          "openvino_lstm_execution_counts": {
+            "ref_any_f32": 18
+          }
+        }
+      },
+      {
+        "case": "ort130-b6-f8-quiet",
+        "artifact": "target/target-speaker-extraction/ort130-b6-f8-quiet.json",
+        "metadata_sha256": "0e6752c6c8bb406d9a562f4f9f8be620cd393cff3ce5aa4d415b314864665fe1",
+        "output_sha256": "27d7887acef241a9ce0280da83c04754d87c09ebe828659a810458100011b98f",
+        "measurement": {
+          "wall_rtf": 0.950072374600586,
+          "process_cpu_rtf": 0.9323329684999997,
+          "stream_process_cpu_rtf": 0.9330743263999999,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 60.13116294940418,
+          "chunk_cost_ms_p95": 74.18574570015153,
+          "chunk_cost_ms_max": 93.74896899953455,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 921.422395999798,
+          "priming_cpu_ms": 901.0891839999999,
+          "note": "Bounded 48->16 kHz resampling, TSE, bounded 16->48 kHz resampling, and optional actual native denoising measured together. Startup and TSE priming excluded. Offline worker scheduling simulation; 190ms allows one 10ms host quantum within 200ms. Live worker and PipeWire untested.",
+          "checks": {
+            "resampler_max_abs_error": 0.0,
+            "native_chunk_partition_max_abs_error": 0.0,
+            "extractor": {
+              "upstream_max_abs_error": 1.1175870895385742e-08,
+              "future_input_max_abs_error": 0.0,
+              "chunk_partition_max_abs_error": 1.1175870895385742e-08,
+              "reset_max_abs_error": 0.0,
+              "backend_future_input_max_abs_error": 0.0,
+              "backend_vs_torch_rmse": 0.0005868462030775845
+            }
+          },
+          "native_engine": null,
+          "denoiser": null,
+          "model": "spk_emb_causal_100",
+          "model_sha256": null,
+          "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "script_sha256": "34fcac6d126f3d10818a95d01b5466428de7c5a6a519e63c1a9a618c5cb7abd8",
+          "extractor_script_sha256": "a32ab547c7bc89863a51ded7961c841a30f32a9d7bd38200cf4cf2eafcd892ee",
+          "source_hash_capture": "startup; extractor executed from captured bytes",
+          "bridge_sha256": null,
+          "command": [
+            "scripts/prototype-extraction-pipeline.py",
+            "--frames",
+            "8",
+            "--blocks",
+            "6",
+            "--paced",
+            "--check",
+            "--extractor-only",
+            "--mixture",
+            "target/target-speaker-extraction/quiet-alone-mixture.wav",
+            "--case",
+            "ort130-b6-f8-quiet"
+          ],
+          "input_sha256": "c27deef3196d2a6c6cbbd0f68b7297b1f7d2ff3b47461c91ecbdbde4c580d511",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "cpu_affinity": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frames": 8,
+          "backend": "ort",
+          "recurrent_precision": "int8",
+          "ort_threads": 1,
+          "ort_spinning": true,
+          "separation_blocks": 6,
+          "depth_ablation": false,
+          "paced": true,
+          "extractor_only": true,
+          "combined_cpu_rtf": 0.9331170632000003,
+          "combined_wall_rtf": 0.9501162994006336,
+          "native_cpu_rtf": 0.0,
+          "native_cpu_resolution_seconds": 0.01,
+          "output_availability_ms_max": 297.6627813345525,
+          "output_availability_ms_p95": 273.9335064338549,
+          "output_availability_over_190ms_packets": 32,
+          "paced_actual_availability_ms_max": 301.2560499996616,
+          "input_resample_lookahead_ms": 0.3958333333333333,
+          "onnxruntime_version": "1.30.0"
+        }
+      }
+    ],
+    "ort130_wheel": {
+      "file": "onnxruntime-1.30.0-cp312-cp312-manylinux_2_28_x86_64.whl",
+      "sha256": "fa688e7891a6aa206636fe7372e27ee75fd17713289f6b4fc7b190e0a7de9328",
+      "source": "PyPI onnxruntime==1.30.0, installed with no dependencies into ignored isolated directory; original venv unchanged"
+    }
   }
 }
