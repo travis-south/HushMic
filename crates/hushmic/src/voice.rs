@@ -340,7 +340,7 @@ impl eframe::App for VoiceApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading(if extraction_trial() { "Target-speaker extraction · experimental" } else { "Voice setup · experimental" });
             ui.label(if extraction_trial() {
-                "INT8 four-block extractor. Speaker selection can be weak and CPU load can cause gaps. Processing delay: 170 ms at the supported 10 ms graph quantum. High Quality / Light settings apply only when extraction is disabled."
+                "INT8 four-block extractor. Speaker selection can be weak and CPU load can cause gaps. Extraction followed by ordinary denoising. Processing delay: 190 ms at the supported 10 ms graph quantum. High Quality / Light and suppression strength control the denoiser."
             } else { "Pause protection uses one fixed voice reference. It may still pass other speakers; quieter speech under a louder speaker is deferred." });
             ui.add_space(10.0);
             ui.label(format!("Physical microphone: {}", self.node));

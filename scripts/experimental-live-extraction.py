@@ -13,7 +13,7 @@ import torch
 spec = importlib.util.spec_from_file_location("pipeline", Path(__file__).with_name("prototype-extraction-pipeline.py"))
 p = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(p)
-DELAY = 5760  # 120 ms fixed engine delay; the existing worker adds 50 ms.
+DELAY = 4320  # 90 ms extraction delay; denoiser and worker each add 50 ms.
 
 
 def read_exact(stream, count):
