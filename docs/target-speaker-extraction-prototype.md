@@ -88,10 +88,11 @@ is discarded; the saved reference has mode 0600. **Forget voice** removes this
 trial's reference. The original trial launcher remains available at
 `target/voice-reference-evaluation/app-trial/launch-trial.sh`.
 
-This trial uses the four-block, four-frame INT8 graph, with the same synthetic
-silence priming and bounded sinc conversion as the offline runner. It runs
-extraction alone when enabled; High Quality/Light and suppression-strength
-settings apply to ordinary DPDFNet when extraction is disabled. It remains a
+The initial extraction-only trial was reported worse than ordinary denoising
+for both noise and other voices. The updated trial keeps DPDFNet after the
+four-block, four-frame INT8 extractor, with the same synthetic silence priming
+and bounded sinc conversion as the offline runner. High Quality/Light and
+suppression strength control the denoiser in both configurations. It remains a
 depth ablation of the six-block trained model. The known selection weaknesses
 and load-dependent runtime failures still apply. No model is included in a
 release or public package.
@@ -99,8 +100,9 @@ release or public package.
 The Python subprocess runs on normal scheduling; the existing Rust worker,
 sample rings and alignment ledger keep inference and subprocess I/O off the
 PipeWire real-time callback. The bridge emits one 480-sample packet per hop with
-a fixed 5,760-sample engine delay. The worker adds 2,400 samples at the supported
-480-sample graph quantum: **8,160 samples / 170 ms**, reported to the graph and
+a fixed 4,320-sample extraction delay, followed by DPDFNet’s 2,400-sample delay.
+The worker adds another 2,400 samples at the supported 480-sample graph quantum:
+**9,120 samples / 190 ms**, reported to the graph and
 diagnostics. Late output is substituted with aligned silence by the existing
 ledger. A dead bridge, non-finite audio, invalid packet or response timeout
 reports extraction unavailable and emits silence until the chain is restarted.
@@ -109,11 +111,13 @@ There is no automatic switch to a different speaker model. The app allows up to
 
 The live processor's runnable `--check` matches the offline output exactly on
 the tested prefix and verifies reset, bypass and mute. The opt-in plugin test
-uses a public reference, paced callbacks and checks exact bypass alignment,
-silent mute, reset and nonzero finite extraction output:
+uses a public reference, paced callbacks and checks bypass alignment within
+FFT reconstruction tolerance, silent mute, reset, retained speech and at least
+40 dB noise reduction on the public noise-only core. Prepare its PCM input first:
 
 ```bash
 target/voice-reference-evaluation/venv/bin/python scripts/experimental-live-extraction.py --check
+target/voice-reference-evaluation/venv/bin/python -c 'import soundfile as sf; x, rate = sf.read("target/target-speaker-extraction/quiet-alone-mixture.wav", dtype="float32"); assert rate == 48000; x.astype("<f4").tofile("target/target-speaker-extraction/quiet-alone-mixture.f32")'
 HUSHMIC_TSE_PYTHON="$PWD/target/voice-reference-evaluation/venv/bin/python" \
 HUSHMIC_TSE_SCRIPT="$PWD/scripts/experimental-live-extraction.py" \
 HUSHMIC_TSE_REFERENCE="$PWD/target/target-speaker-extraction/plugin-public-reference.bin" \
@@ -121,11 +125,27 @@ OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
 cargo test --release -p dpdfnet-ladspa --test extraction -- --ignored --nocapture
 ```
 
-The built plugin also passed an active PipeWire startup smoke with a temporary
+The initial extraction-only plugin passed an active PipeWire startup smoke with a temporary
 public reference: the Fifine input was selected, extraction reported active INT8,
 and reported latency was 8,160 samples. Consumer audio was discarded. The public
 reference was removed and extraction disabled before opening user enrollment.
 This is a startup check, not a call-duration reliability or personal-voice test.
+
+The updated frozen cascade also passed an active PipeWire startup check, reporting
+`target extraction int8 + native int8` and 9,120 samples. The Fifine was absent,
+so the default input was used. A separate public reference was supplied and
+consumer audio discarded; the existing personal enrollment was untouched.
+
+On the same saved noise-only interval, extraction alone reduced energy by
+5.7 dB, ordinary High Quality by 98 dB, and the offline cascade by 80 dB. Both
+denoised outputs were nearly silent; these are fixture-specific figures. The
+updated four-block cascade passed the fresh 50-second paced screen at 0.53 CPU
+seconds/audio second and 185 ms maximum output availability. An early live
+plugin check logged an input-ring overflow; later checks passed without it.
+Runtime variability remains a limitation. This is one run
+under the current desktop load, not sustained-call validation. It does not
+repair weak speaker selection for every enrollment. The trial stays disabled
+until explicitly re-enabled; the existing extraction enrollment is retained.
 
 The reference in that command is generated from the separate public enrollment
 fixture, not from the microphone. These checks establish integration behavior,

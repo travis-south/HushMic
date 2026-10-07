@@ -1,12 +1,13 @@
 //! Opt-in local experiment; all subprocess I/O stays on the existing worker.
 use crate::HopEngine;
-use hushmic_denoiser::{Mode, HOP};
+use hushmic_denoiser::{Denoiser, Mode, HOP};
 use std::io::{self, Read, Write};
 use std::os::{fd::AsRawFd, unix::process::CommandExt};
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 use std::time::{Duration, Instant};
 
 pub struct Extraction {
+    denoiser: Denoiser,
     child: Child,
     input: ChildStdin,
     output: ChildStdout,
@@ -62,6 +63,8 @@ fn read_bounded(pipe: &mut ChildStdout, bytes: &mut [u8], timeout: Duration) -> 
 
 impl Extraction {
     pub fn new() -> Result<Self, String> {
+        let model_path = crate::model_path();
+        let denoiser = crate::load_denoiser(&model_path).map_err(|e| e.to_string())?;
         let mut command = Command::new(
             std::env::var_os("HUSHMIC_TSE_PYTHON").ok_or("Missing extraction Python")?,
         );
@@ -86,6 +89,7 @@ impl Extraction {
         let input = child.stdin.take().ok_or("Extraction input missing")?;
         let output = child.stdout.take().ok_or("Extraction output missing")?;
         let mut engine = Self {
+            denoiser,
             child,
             input,
             output,
@@ -97,16 +101,25 @@ impl Extraction {
         read_bounded(&mut engine.output, &mut handshake, Duration::from_secs(30))
             .map_err(|e| e.to_string())?;
         if &handshake[..8] != b"HMTSE001"
-            || u32::from_le_bytes(handshake[8..].try_into().unwrap()) != 5760
+            || u32::from_le_bytes(handshake[8..].try_into().unwrap()) != 4320
         {
             return Err("Extraction bridge has an incompatible delay or protocol".into());
         }
-        crate::log::contract_line(
-            "engine: quality (experimental target-speaker extraction, four-block ablation)",
-        );
+        let tier = if crate::plan_tiers(&model_path, false).1 == crate::Tier::Light {
+            "light"
+        } else {
+            "quality"
+        };
+        crate::log::contract_line(&format!(
+            "engine: {tier} (experimental target-speaker extraction, four-block ablation)"
+        ));
+        #[cfg(feature = "native")]
+        let denoiser_engine = engine.denoiser.engine().to_string();
+        #[cfg(not(feature = "native"))]
+        let denoiser_engine = "onnx";
         crate::log::contract_line(&crate::inference_line(
-            crate::model_name(&crate::model_path()),
-            "target extraction int8",
+            crate::model_name(&model_path),
+            &format!("target extraction int8 + {denoiser_engine}"),
             None,
         ));
         crate::log::contract_line("protection: active");
@@ -164,16 +177,19 @@ impl HopEngine for Extraction {
             if samples.iter().any(|v| !v.is_finite()) {
                 return Err(io::Error::other("Non-finite extraction output"));
             }
-            *output = samples;
-            Ok(())
+            self.denoiser
+                .process_hop(&samples, output)
+                .map_err(|e| io::Error::other(e.to_string()))
         })();
         result.map_err(|e: io::Error| {
+            output.fill(0.0);
             self.fail(&e.to_string());
             e.to_string()
         })
     }
 
     fn reset(&mut self) {
+        self.denoiser.reset();
         if self.failed {
             return;
         }
@@ -194,6 +210,7 @@ impl HopEngine for Extraction {
 
     fn set_mode(&mut self, mode: Mode) {
         self.mode = mode;
+        self.denoiser.set_mode(mode);
         if !self.failed {
             crate::log::contract_line(if mode == Mode::Process {
                 "protection: active"
@@ -202,13 +219,18 @@ impl HopEngine for Extraction {
             });
         }
     }
-    fn set_attenuation_limit_db(&mut self, _db: f32) {}
+    fn set_attenuation_limit_db(&mut self, db: f32) {
+        self.denoiser.set_attenuation_limit_db(db);
+    }
     fn note_output_lead(&mut self, lead: usize) {
         if self.lead != lead {
-            crate::log::contract_line(&format!("latency: {}", 5760 + lead));
+            crate::log::contract_line(&format!(
+                "latency: {}",
+                4320 + hushmic_denoiser::LATENCY_SAMPLES + lead
+            ));
             self.lead = lead;
         }
-        if 5760 + lead > 9600 {
+        if 4320 + hushmic_denoiser::LATENCY_SAMPLES + lead > 9600 {
             self.fail("Graph quantum exceeds the 200 ms extraction budget");
         }
     }
