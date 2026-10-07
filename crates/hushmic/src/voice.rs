@@ -1,7 +1,7 @@
 //! Explicit local enrollment. Audio stays in RAM and only the reference is saved.
 use crate::abtest::stream::{self, F32Reader, Header, SampleEndian};
 use eframe::egui;
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
 use std::os::fd::AsRawFd;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -9,8 +9,99 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc};
 use std::time::{Duration, Instant};
 
+pub fn extraction_trial() -> bool {
+    std::env::var_os("HUSHMIC_TSE_SCRIPT").is_some()
+}
+
 pub fn reference_path() -> PathBuf {
+    if extraction_trial() {
+        return std::env::var_os("HUSHMIC_TSE_REFERENCE")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| {
+                crate::config::Config::path().with_file_name("extraction-reference.bin")
+            });
+    }
     crate::config::Config::path().with_file_name("voice-reference.bin")
+}
+
+fn save_reference(reference: Vec<f32>) -> Result<(), String> {
+    if !extraction_trial() {
+        return hushmic_denoiser::voice::write_reference(
+            &reference_path(),
+            &reference
+                .try_into()
+                .map_err(|_| "Invalid detector reference")?,
+        );
+    }
+    if reference.len() != 192
+        || reference.iter().any(|v| !v.is_finite())
+        || reference.iter().all(|v| *v == 0.0)
+    {
+        return Err("Invalid extraction reference".into());
+    }
+    use std::os::unix::fs::OpenOptionsExt;
+    let path = reference_path();
+    std::fs::create_dir_all(path.parent().ok_or("Reference needs a parent directory")?)
+        .map_err(|e| e.to_string())?;
+    let temp = path.with_extension(format!("{}.tmp", std::process::id()));
+    let result = (|| {
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(&temp)?;
+        for sample in reference {
+            file.write_all(&sample.to_le_bytes())?;
+        }
+        file.sync_all()?;
+        std::fs::rename(&temp, path)
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_file(temp);
+    }
+    result.map_err(|e| e.to_string())
+}
+
+fn extraction_reference(raw: &[f32], cancel: Arc<AtomicBool>) -> Result<Vec<f32>, String> {
+    let mut command =
+        Command::new(std::env::var_os("HUSHMIC_TSE_PYTHON").ok_or("Missing extraction Python")?);
+    command
+        .arg(std::env::var_os("HUSHMIC_TSE_SCRIPT").ok_or("Missing extraction script")?)
+        .arg("--enroll")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped());
+    let mut child = command.spawn().map_err(|e| e.to_string())?;
+    let result = (|| {
+        let mut input = std::io::BufWriter::new(child.stdin.take().ok_or("Encoder input missing")?);
+        for sample in raw {
+            if cancel.load(Ordering::Acquire) {
+                return Err("Enrollment canceled".to_owned());
+            }
+            input
+                .write_all(&sample.to_le_bytes())
+                .map_err(|e| e.to_string())?;
+        }
+        input.flush().map_err(|e| e.to_string())?;
+        drop(input);
+        let mut reader = CaptureRead {
+            pipe: child.stdout.take().ok_or("Encoder output missing")?,
+            cancel,
+            deadline: Instant::now() + Duration::from_secs(30),
+        };
+        let mut bytes = [0; 192 * 4];
+        reader
+            .read_exact(&mut bytes)
+            .map_err(|e| format!("Extraction enrollment failed: {e}"))?;
+        Ok(bytes
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|b| f32::from_le_bytes(*b))
+            .collect())
+    })();
+    let _ = child.kill();
+    let _ = child.wait();
+    result
 }
 
 struct CaptureRead {
@@ -49,7 +140,7 @@ impl Read for CaptureRead {
     }
 }
 
-fn capture(node: &str, cancel: Arc<AtomicBool>) -> Result<[f32; 40], String> {
+fn capture(node: &str, cancel: Arc<AtomicBool>) -> Result<Vec<f32>, String> {
     if !crate::config::can_own_profile(node) {
         return Err("Select a physical microphone before enrollment".into());
     }
@@ -117,6 +208,9 @@ fn capture(node: &str, cancel: Arc<AtomicBool>) -> Result<[f32; 40], String> {
             }
             let _ = child.kill();
             let _ = child.wait();
+            if extraction_trial() {
+                return extraction_reference(&raw, cancel.clone());
+            }
             let paths = crate::controller::Paths::resolve();
             hushmic_denoiser::init_runtime(&paths.dylib).map_err(|e| e.to_string())?;
             if cancel.load(Ordering::Acquire) {
@@ -126,6 +220,7 @@ fn capture(node: &str, cancel: Arc<AtomicBool>) -> Result<[f32; 40], String> {
                 &raw,
                 &paths.model_dir.join("voice-reference-encoder.onnx"),
             )
+            .map(|reference| reference.to_vec())
         })();
         raw.fill(0.0);
         chunk.fill(0.0);
@@ -138,7 +233,7 @@ fn capture(node: &str, cancel: Arc<AtomicBool>) -> Result<[f32; 40], String> {
 
 type Recording = (
     Arc<AtomicBool>,
-    mpsc::Receiver<Result<[f32; 40], String>>,
+    mpsc::Receiver<Result<Vec<f32>, String>>,
     Instant,
 );
 
@@ -186,14 +281,17 @@ impl eframe::App for VoiceApp {
         if let Some(result) = result {
             let (cancel, _, _) = self.recording.take().unwrap();
             if !cancel.load(Ordering::Acquire) {
-                self.message = match result.and_then(|reference| {
-                    hushmic_denoiser::voice::write_reference(&reference_path(), &reference)
-                }) {
+                self.message = match result.and_then(save_reference) {
                     Ok(()) => {
                         self.enrolled = true;
                         if self.request("reload") {
-                            "Voice learned locally. Enable pause protection explicitly below."
-                                .into()
+                            if extraction_trial() {
+                                "Voice learned locally. Enable target-speaker extraction below."
+                                    .into()
+                            } else {
+                                "Voice learned locally. Enable pause protection explicitly below."
+                                    .into()
+                            }
                         } else {
                             format!("Reference saved, but live reload failed: {}", self.message)
                         }
@@ -220,7 +318,12 @@ impl eframe::App for VoiceApp {
             if code == 0 {
                 if let Ok(value) = serde_json::from_str::<serde_json::Value>(&out) {
                     self.availability = format!(
-                        "Protection: {}{}",
+                        "{}: {}{}",
+                        if extraction_trial() {
+                            "Extraction"
+                        } else {
+                            "Protection"
+                        },
                         value["state"].as_str().unwrap_or("unavailable"),
                         value["reason"]
                             .as_str()
@@ -235,8 +338,10 @@ impl eframe::App for VoiceApp {
             }
         }
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Voice setup · experimental");
-            ui.label("Pause protection uses one fixed voice reference. It may still pass other speakers; quieter speech under a louder speaker is deferred.");
+            ui.heading(if extraction_trial() { "Target-speaker extraction · experimental" } else { "Voice setup · experimental" });
+            ui.label(if extraction_trial() {
+                "INT8 four-block extractor. Speaker selection can be weak and CPU load can cause gaps. Processing delay: 170 ms at the supported 10 ms graph quantum. High Quality / Light settings apply only when extraction is disabled."
+            } else { "Pause protection uses one fixed voice reference. It may still pass other speakers; quieter speech under a louder speaker is deferred." });
             ui.add_space(10.0);
             ui.label(format!("Physical microphone: {}", self.node));
             ui.label("Record 20 seconds of your voice alone in a quiet room. Speak naturally and continuously, with the microphone at your usual distance. Avoid television, other voices, and clipping.");
@@ -258,7 +363,7 @@ impl eframe::App for VoiceApp {
                 if ui.button("Cancel enrollment").clicked() { cancel.store(true, Ordering::Release); self.message = "Canceled. Previous reference retained.".into(); }
             }
             let mut enabled = self.requested;
-            if ui.add_enabled(!busy && (self.enrolled || self.requested), egui::Checkbox::new(&mut enabled, "Enable pause protection")).changed() { self.request(if enabled { "enable" } else { "disable" }); }
+            if ui.add_enabled(!busy && (self.enrolled || self.requested), egui::Checkbox::new(&mut enabled, if extraction_trial() { "Enable target-speaker extraction" } else { "Enable pause protection" })).changed() { self.request(if enabled { "enable" } else { "disable" }); }
             if ui.add_enabled(!busy && self.enrolled, egui::Button::new("Forget voice")).clicked() { self.request("forget"); }
             ui.add_space(10.0);
             ui.label(&self.message);
@@ -271,7 +376,7 @@ impl eframe::App for VoiceApp {
 
 pub fn run(node: String) -> Result<(), String> {
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([520.0, 450.0]),
+        viewport: egui::ViewportBuilder::default().with_inner_size([560.0, 500.0]),
         ..Default::default()
     };
     eframe::run_native(

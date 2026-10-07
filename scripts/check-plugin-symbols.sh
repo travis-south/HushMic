@@ -13,8 +13,9 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SO="${1:-${CARGO_TARGET_DIR:-$REPO_ROOT/target}/release/libdpdfnet_ladspa.so}"
 [ -f "$SO" ] || { echo "error: $SO not built" >&2; exit 1; }
 
-# Weak references the toolchain's own startup code leaves unversioned.
-ALLOWED_WEAK='^(__gmon_start__|_ITM_(de)?registerTMCloneTable|__cxa_finalize)$'
+# Weak optional references from Rust startup and subprocess support.
+# addchdir is probed by std before falling back to addchdir_np on older glibc.
+ALLOWED_WEAK='^(__gmon_start__|_ITM_(de)?registerTMCloneTable|__cxa_finalize|posix_spawn_file_actions_addchdir)$'
 
 fail=0
 # nm prints symbol versions (name@GLIBC_2.2.5) only since binutils 2.35.

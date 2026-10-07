@@ -46,7 +46,13 @@ fn fail_summary() -> String {
 /// before an absent `hushmic_source` counts as "down". Registration normally
 /// takes well under a second; without the grace, the status/watchdog sampled
 /// right after a spawn would flash Error / respawn a healthy child.
-const STARTUP_GRACE_SECS: u64 = 3;
+fn startup_grace_secs() -> u64 {
+    if hushmic::voice::extraction_trial() {
+        30
+    } else {
+        3
+    }
+}
 
 /// The budget for `hushmic status` to re-read an idle chain's state on the
 /// main loop. pw-dump answers in tens of ms; past this the reading is
@@ -76,7 +82,7 @@ fn compute_status(
         && (node_present.unwrap_or(true) // probe failed => don't cry wolf
             || controller
                 .secs_since_spawn()
-                .is_some_and(|s| s < STARTUP_GRACE_SECS))
+                .is_some_and(|s| s < startup_grace_secs()))
     {
         // Healthy chain: the icon reflects the processing mode. Error keeps
         // precedence via the arm below.
@@ -2126,7 +2132,7 @@ fn main() {
                 // logged only on the down-state transition.
                 let in_grace = controller
                     .secs_since_spawn()
-                    .is_some_and(|s| s < STARTUP_GRACE_SECS);
+                    .is_some_and(|s| s < startup_grace_secs());
                 let down = cfg.enabled
                     && (!controller.is_running() || (node_present == Some(false) && !in_grace));
                 if down {
@@ -2308,7 +2314,7 @@ fn main() {
                 // for a whole call are worse than one short gap.
                 let settling = controller
                     .secs_since_spawn()
-                    .is_some_and(|s| s < STARTUP_GRACE_SECS);
+                    .is_some_and(|s| s < startup_grace_secs());
                 let moved_to = dump
                     .as_deref()
                     .and_then(pipewire::parse_configured_default_source)
