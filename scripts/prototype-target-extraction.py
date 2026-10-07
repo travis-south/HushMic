@@ -222,6 +222,11 @@ def ort_core(model, cues, frames, threads, export, quantize, static_int8=False, 
         return torch.complex(ri[:, 0], ri[:, 1]).unsqueeze(1)
 
     run.reset = reset
+    def restore(saved):
+        nonlocal cache
+        cache = [value.copy() for value in saved]
+    run.snapshot = lambda: [value.copy() for value in cache]
+    run.restore = restore
     run.graph = graph
     return run
 

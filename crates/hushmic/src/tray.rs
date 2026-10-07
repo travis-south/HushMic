@@ -473,7 +473,12 @@ impl Tray for HushMicTray {
             }
             .into(),
             StandardItem {
-                label: "Voice setup… (experimental)".into(),
+                label: if crate::voice::extraction_trial() {
+                    "Target-speaker setup… (experimental)"
+                } else {
+                    "Voice setup… (experimental)"
+                }
+                .into(),
                 activate: Box::new(|t: &mut Self| {
                     let _ = t.cmd_tx.send(TrayCmd::VoiceSetup);
                 }),

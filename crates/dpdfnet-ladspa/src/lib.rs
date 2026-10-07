@@ -6,6 +6,7 @@
 //! paths.
 pub mod adaptive;
 pub mod align;
+mod extraction;
 pub mod ladder;
 pub mod log;
 pub mod rt;
@@ -268,19 +269,31 @@ impl DpdfnetPlugin {
         // LADSPA instantiate cannot cleanly reject, so a mismatched host gets the
         // same degradation as a failed engine init: a working-but-silent node
         // (audibly wrong beats subtly wrong enhancement).
-        let engine = if sample_rate != 48_000 {
+        let worker = if sample_rate != 48_000 {
             eprintln!(
                 "[dpdfnet-ladspa] unsupported sample rate {sample_rate} (need 48000); \
                  emitting silence"
             );
             None
+        } else if std::env::var_os("HUSHMIC_TSE_SCRIPT").is_some()
+            && std::env::var("HUSHMIC_VOICE_REQUESTED").as_deref() == Ok("1")
+        {
+            match extraction::Extraction::new() {
+                Ok(engine) => WorkerHandle::spawn_timeshare(engine),
+                Err(e) => {
+                    log::contract_line(&format!(
+                        "protection: unavailable ({e}; learn an extraction voice and reload)"
+                    ));
+                    None
+                }
+            }
         } else {
             init_engine()
+                .map(voice::ProtectedEngine::new)
+                .and_then(WorkerHandle::spawn)
         };
         DpdfnetPlugin {
-            worker: engine
-                .map(voice::ProtectedEngine::new)
-                .and_then(WorkerHandle::spawn),
+            worker,
             aligner: Aligner::new(),
             active: false,
             restarting: false,

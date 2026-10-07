@@ -76,6 +76,66 @@ matching public implementation and verified model terms. Pinned source and
 acquisition evidence are summarized in the results file. No candidate was
 packaged or added to the live app.
 
+## Local app trial
+
+The user has now requested an experimental app build. `scripts/run-extraction-trial.sh`
+launches the frozen local build under `target/target-speaker-extraction/app-trial/`.
+It uses a separate configuration, cache and 192-float reference; it never imports
+the existing 40-float detector enrollment. Open **Target-speaker setup…
+(experimental)**, record 20 seconds, and enable extraction explicitly. Recording
+starts only on the enrollment button. Audio goes through the encoder in RAM and
+is discarded; the saved reference has mode 0600. **Forget voice** removes this
+trial's reference. The original trial launcher remains available at
+`target/voice-reference-evaluation/app-trial/launch-trial.sh`.
+
+This trial uses the four-block, four-frame INT8 graph, with the same synthetic
+silence priming and bounded sinc conversion as the offline runner. It runs
+extraction alone when enabled; High Quality/Light and suppression-strength
+settings apply to ordinary DPDFNet when extraction is disabled. It remains a
+depth ablation of the six-block trained model. The known selection weaknesses
+and load-dependent runtime failures still apply. No model is included in a
+release or public package.
+
+The Python subprocess runs on normal scheduling; the existing Rust worker,
+sample rings and alignment ledger keep inference and subprocess I/O off the
+PipeWire real-time callback. The bridge emits one 480-sample packet per hop with
+a fixed 5,760-sample engine delay. The worker adds 2,400 samples at the supported
+480-sample graph quantum: **8,160 samples / 170 ms**, reported to the graph and
+diagnostics. Late output is substituted with aligned silence by the existing
+ledger. A dead bridge, non-finite audio, invalid packet or response timeout
+reports extraction unavailable and emits silence until the chain is restarted.
+There is no automatic switch to a different speaker model. The app allows up to
+30 seconds for initial model loading; resets restore a saved primed state.
+
+The live processor's runnable `--check` matches the offline output exactly on
+the tested prefix and verifies reset, bypass and mute. The opt-in plugin test
+uses a public reference, paced callbacks and checks exact bypass alignment,
+silent mute, reset and nonzero finite extraction output:
+
+```bash
+target/voice-reference-evaluation/venv/bin/python scripts/experimental-live-extraction.py --check
+HUSHMIC_TSE_PYTHON="$PWD/target/voice-reference-evaluation/venv/bin/python" \
+HUSHMIC_TSE_SCRIPT="$PWD/scripts/experimental-live-extraction.py" \
+HUSHMIC_TSE_REFERENCE="$PWD/target/target-speaker-extraction/plugin-public-reference.bin" \
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+cargo test --release -p dpdfnet-ladspa --test extraction -- --ignored --nocapture
+```
+
+The built plugin also passed an active PipeWire startup smoke with a temporary
+public reference: the Fifine input was selected, extraction reported active INT8,
+and reported latency was 8,160 samples. Consumer audio was discarded. The public
+reference was removed and extraction disabled before opening user enrollment.
+This is a startup check, not a call-duration reliability or personal-voice test.
+
+The reference in that command is generated from the separate public enrollment
+fixture, not from the microphone. These checks establish integration behavior,
+not word preservation or a reliable runtime pass during real calls. The local
+build depends on the already acquired ignored prototype assets and Python
+environment. Rebuilding Rust does not update the frozen Python copies; copy the
+three prototype scripts together, pin their repository root and freeze the
+INT8 graph before retesting. The prepared build records their exact hashes in
+its ignored `ready.json`.
+
 ## Follow-up: actual 48 kHz pipeline
 
 `scripts/prototype-extraction-pipeline.py` now feeds bounded, stateful sinc

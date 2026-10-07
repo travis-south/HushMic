@@ -15,13 +15,21 @@ pub fn protection_latency_samples(quantum: u32) -> u64 {
         a = b;
         b = r;
     }
-    2400 + 4320 + (u64::from(quantum) + 480 - u64::from(a) + 1920).max(2400)
+    (if crate::voice::extraction_trial() {
+        5760
+    } else {
+        2400 + 4320
+    }) + (u64::from(quantum) + 480 - u64::from(a) + 1920).max(2400)
 }
 pub fn protection_quantum_supported(quantum: u32) -> bool {
     quantum != 0 && protection_latency_samples(quantum) <= 9600
 }
 pub fn latency_samples(protection_requested: bool) -> u32 {
-    LATENCY_SAMPLES + if protection_requested { 4320 } else { 0 }
+    if protection_requested && crate::voice::extraction_trial() {
+        8160
+    } else {
+        LATENCY_SAMPLES + if protection_requested { 4320 } else { 0 }
+    }
 }
 
 /// Filesystem locations used to spawn the filter-chain host.
