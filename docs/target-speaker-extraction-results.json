@@ -612,5 +612,40 @@
       "disjoint-noise.wav": "26b733e0971a50987baaf0faf17718a87671f52bf62c2ebbd1fc126504ad84dc",
       "disjoint-mixture.wav": "2f1f897ae5fe60a5c83d747f956eed1248dc72e6130b708e4b803027f766ad70"
     }
-  }
+  },
+  "app_trial_final_status": {
+    "attn_limit": 100.0,
+    "chain": {
+      "node_present": true,
+      "running": true
+    },
+    "defaults": {
+      "attn_limit": 100.0,
+      "model": "dpdfnet2_48khz_hr"
+    },
+    "enabled": true,
+    "engine": "light",
+    "inference": {
+      "engine": "native int8",
+      "model": "dpdfnet2_48khz_hr",
+      "reason": null
+    },
+    "latency_samples": 9120,
+    "mic": {
+      "active": "alsa_input.usb-3142_fifine_Microphone-00.analog-stereo",
+      "configured": "alsa_input.usb-3142_fifine_Microphone-00.analog-stereo",
+      "fallback_active": false
+    },
+    "mode": "suppress",
+    "model": "dpdfnet8_48khz_hr",
+    "profile": "alsa_input.usb-3142_fifine_Microphone-00.analog-stereo",
+    "protection": {
+      "reason": "Detector stream fell behind; ordinary denoising continues",
+      "requested": true,
+      "state": "unavailable"
+    },
+    "tray": "sni",
+    "version": "0.10.1"
+  },
+  "app_trial_notes": "No binary/settings/reference changes. Final live trial suffered worker lag; CPU experiments may have contributed. Two active Chromium consumers; reload deferred pending call-use clarification. All experimental workloads finished."
 }

@@ -1,8 +1,8 @@
 # Target-speaker extraction prototype
 
 2026-10-07. Offline experiment on `codex/target-speaker-extraction`, based on
-`901b846fa21554b4d625dcf94975878da0ee7490`. The running Fifine/High Quality trial
-and its personal reference were not changed. No microphone audio was captured
+`901b846fa21554b4d625dcf94975878da0ee7490`. No app binaries, saved settings,
+or personal reference were changed. No microphone audio was captured
 or uploaded.
 
 ## Finding
@@ -135,6 +135,13 @@ baseline README. Source-file Apache-2.0 notices do not resolve that question.
 The weights are not added to the repository or release package. Shipping also
 requires resolving the model terms, sustained combined-worker performance,
 48 kHz adaptation, total latency, preservation/onsets, and real call quality.
+
+The final live status check found the existing trial in Light fallback with
+protection unavailable (`Detector stream fell behind; ordinary denoising
+continues`); its saved choice remains High Quality. CPU experiments may have
+contributed to the lag. Chromium had two active microphone consumers, so the
+chain was not restarted during possible call use. No experiment process remains
+running. Reloading the existing trial restores a fresh detector instance.
 
 Context7 documentation for PyTorch and ONNX Runtime was consulted for CPU
 inference and quantization. The pinned implementation and
