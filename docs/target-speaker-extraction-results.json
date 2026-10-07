@@ -647,5 +647,1121 @@
     "tray": "sni",
     "version": "0.10.1"
   },
-  "app_trial_notes": "No binary/settings/reference changes. Final live trial suffered worker lag; CPU experiments may have contributed. Two active Chromium consumers; reload deferred pending call-use clarification. All experimental workloads finished."
+  "app_trial_notes": "No binary/settings/reference changes. Final live trial suffered worker lag; CPU experiments may have contributed. Two active Chromium consumers; reload deferred pending call-use clarification. All experimental workloads finished.",
+  "continuation": {
+    "date": "2026-10-07",
+    "verdict": "PRIMED_FULL_INT8_MODEL_PROMISING_OFFLINE_FURTHER_VALIDATION_REQUIRED",
+    "latest_runner_sha256": "f4fb4716ee85ab9fd16968d16ad81a700efa2b5c95ff9e635efc93836493bfdb",
+    "changes": [
+      "Optional four-of-six depth ablation; strict full-checkpoint load before trimming; default trained architecture unchanged",
+      "Optional 128-frame synthetic silence priming at stream reset, with startup costs reported separately",
+      "ONNX export wrapper explicitly in eval mode, with inference-mode regression assertion",
+      "Absent competitor no longer produces misleading speaker selection ratio"
+    ],
+    "interpretation": [
+      "Priming improves the previously failing public first turn with the unchanged six-block INT8 graph. Adds past state, not future input or queued audio.",
+      "Later full-model 50-second run meets extractor-only average budget. Earlier slower runs remain evidence; scheduling/load/frequency not controlled across runs, priming does not explain reduced per-chunk CPU.",
+      "Four-block ablation weakens speaker selection; primed full model is preferred for further investigation.",
+      "Target-only SI-SDR declines in the long stream; projection/short PCM checks do not certify word preservation.",
+      "Total combined-worker budget, 48k streaming adaptation, 200ms latency, onset preservation and model terms remain unresolved. No live extraction integration."
+    ],
+    "candidate_screen": [
+      {
+        "name": "LookOnceToHear",
+        "repository": "https://github.com/vb000/LookOnceToHear",
+        "source_commit": "9243d5f7338da0c6aa63bf8507279ad7e2894fe3",
+        "finding": "Two input channels in tsh.json; source noncommercial; no release assets, missing-weight reports in issues 11/12/13."
+      },
+      {
+        "name": "OpenSpeakerBeam-SS",
+        "repository": "https://github.com/helloooideeeeea/OpenSpeakerBeam-SS",
+        "source_commit": "bbbae73f74fc14eafdf7abb93f9094eafccd21df",
+        "finding": "Source configures Conv1DBlock with norm_type=gLN; global time normalization prevents bounded streaming equivalence despite causal convolutions. Checkpoint advertised but not evaluated."
+      },
+      {
+        "name": "DAVE",
+        "repository": "https://github.com/TaurenMountain/DAVE",
+        "source_commit": "f0d8fca363d01205912f0c0e68f38821550f9161",
+        "finding": "Small trained anonymous separator; unmasked temporal attention and global normalization in source. Not bounded causal extraction; no inference run."
+      },
+      {
+        "name": "PS4",
+        "repository": "https://github.com/TaurenMountain/PS4",
+        "source_commit": "fd6d31c300f6a4014b62bc1b449fd569ae45cf1c",
+        "finding": "Published BSRNN config is noncausal. Not evaluated."
+      },
+      {
+        "name": "Voce SpeakerBeam-SS",
+        "checkpoint": "https://huggingface.co/gabrielmbmb/voce-speakerbeam-ss-librimix-train360",
+        "revision": "aeba4a5d8373116d856b2d6cab689c7b08dd1729",
+        "artifact": "best.pt",
+        "bytes": 104875869,
+        "sha256": "a17b9cf5b5ad2c5be37164527c92904e2241ec3a13a083e13f4a823915a0afe8",
+        "epoch": 32,
+        "model_config": {
+          "encoder_kernel_size": 320,
+          "encoder_stride": 160,
+          "encoder_channels": 2048,
+          "bottleneck_channels": 256,
+          "num_repeats": 2,
+          "pre_s4_blocks": 3,
+          "post_s4_blocks": 1,
+          "lookahead_blocks": 0
+        },
+        "finding": "Downloaded and inspected with weights_only=True and only pathlib.PosixPath allowlisted. No model card/license found, no matching public implementation located. Config claims are not verified causality or quality. No inference run."
+      },
+      {
+        "name": "penta2himajin/tse-conv-tasnet-48k",
+        "checkpoint": "https://huggingface.co/penta2himajin/tse-conv-tasnet-48k",
+        "finding": "Fresh model API request still returns 401. Search-indexed model card is not a downloaded/evaluated artifact."
+      }
+    ],
+    "runs": [
+      {
+        "artifact": "target/target-speaker-extraction/depth-ablation-librispeech-spk_emb_causal_100-ort-conv-int8-t1-f8-b4.json",
+        "result": {
+          "wall_rtf": 0.6304637721157633,
+          "process_cpu_rtf": 0.6229428756,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 40.1569281602397,
+          "chunk_cost_ms_p95": 56.963685981463634,
+          "chunk_cost_ms_max": 63.28365800436586,
+          "input_readiness_ms_max": 88.0,
+          "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+          "model": "spk_emb_causal_100",
+          "backend": "ort",
+          "threads": 1,
+          "separation_blocks": 4,
+          "depth_ablation": true,
+          "partial_int8": true,
+          "static_convolution_int8": true,
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "input_sha256": "47eae56040bec3eb63049c03cd2a1634b4ea8f50d37fe768b1b216d4d4606653",
+          "enrollment_sha256": "f01cffd7a33fc29a1d9f2f0ac277fc8656c0794abe015ee5cc8dc55351fb6cba",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "machine": "Linux-7.2.5-3-omarchy-x86_64-with-glibc2.44",
+          "cpu_affinity": [
+            2
+          ],
+          "command": [
+            "scripts/prototype-target-extraction.py",
+            "--blocks",
+            "4",
+            "--backend",
+            "ort",
+            "--int8",
+            "--static-int8",
+            "--case",
+            "depth-ablation-librispeech",
+            "--target",
+            "target/target-speaker-extraction/target.wav",
+            "--competitor",
+            "target/target-speaker-extraction/competitor.wav"
+          ],
+          "stream_can_keep_up": true,
+          "extractor_cpu_budget_pass": true,
+          "checks": null,
+          "graph_sha256": "557d33e6432beaadf04b10f22c6527d26de6aa94a8c9035508ade21f82baf4cb",
+          "acoustics": [
+            {
+              "seconds": [
+                0,
+                3
+              ],
+              "target_projection_gain": -0.7481539845466614,
+              "competitor_projection_gain": -0.3243831992149353,
+              "target_to_competitor_projection_improvement_db": 7.258652687072754,
+              "output_si_sdr_db": 4.028143882751465,
+              "mixture_si_sdr_db": 0.04998131841421127
+            },
+            {
+              "seconds": [
+                3.2,
+                6.8
+              ],
+              "competitor_only_reduction_db": 14.900025367736816
+            },
+            {
+              "seconds": [
+                7,
+                10
+              ],
+              "target_projection_gain": -0.7121790647506714,
+              "competitor_projection_gain": -0.23007865250110626,
+              "target_to_competitor_projection_improvement_db": 9.814257621765137,
+              "output_si_sdr_db": 3.07865834236145,
+              "mixture_si_sdr_db": -1.6044985055923462
+            }
+          ]
+        }
+      },
+      {
+        "artifact": "target/target-speaker-extraction/depth-ablation-preroll-spk_emb_causal_100-ort-conv-int8-t1-f8-b4.json",
+        "result": {
+          "wall_rtf": 0.570838584929747,
+          "process_cpu_rtf": 0.5648539718181808,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 36.50711880364661,
+          "chunk_cost_ms_p95": 47.80248263850808,
+          "chunk_cost_ms_max": 52.15742305153981,
+          "input_readiness_ms_max": 88.0,
+          "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+          "model": "spk_emb_causal_100",
+          "backend": "ort",
+          "threads": 1,
+          "separation_blocks": 4,
+          "depth_ablation": true,
+          "partial_int8": true,
+          "static_convolution_int8": true,
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "input_sha256": "5a9ef02d1c9f3705655170087a336dc8e193704b8938a928e43fc0efa4898464",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "machine": "Linux-7.2.5-3-omarchy-x86_64-with-glibc2.44",
+          "cpu_affinity": [
+            2
+          ],
+          "command": [
+            "scripts/prototype-target-extraction.py",
+            "--blocks",
+            "4",
+            "--backend",
+            "ort",
+            "--int8",
+            "--static-int8",
+            "--case",
+            "depth-ablation-preroll",
+            "--mixture",
+            "target/target-speaker-extraction/public-mixture-preroll.wav",
+            "--enrollment",
+            "target/voice-reference-evaluation/enrollment.wav"
+          ],
+          "stream_can_keep_up": true,
+          "extractor_cpu_budget_pass": true,
+          "checks": null,
+          "graph_sha256": "557d33e6432beaadf04b10f22c6527d26de6aa94a8c9035508ade21f82baf4cb",
+          "acoustics_after_discarding_one_second_of_preceding_silence": [
+            {
+              "seconds": [
+                0,
+                3
+              ],
+              "target_projection_gain": -0.8380002975463867,
+              "competitor_projection_gain": -0.2845326066017151,
+              "target_to_competitor_projection_improvement_db": 9.382242202758789,
+              "output_si_sdr_db": 9.074409484863281,
+              "mixture_si_sdr_db": 6.116610050201416
+            },
+            {
+              "seconds": [
+                3.2,
+                6.8
+              ],
+              "competitor_only_reduction_db": 12.011659622192383
+            },
+            {
+              "seconds": [
+                7,
+                10
+              ],
+              "target_projection_gain": -0.9419894218444824,
+              "competitor_projection_gain": -0.21556434035301208,
+              "target_to_competitor_projection_improvement_db": 12.809382438659668,
+              "output_si_sdr_db": 12.22459888458252,
+              "mixture_si_sdr_db": 8.960132598876953
+            }
+          ],
+          "warmup_claim": "This is a changed input history, not proof that cold-start speech is preserved."
+        }
+      },
+      {
+        "artifact": "target/target-speaker-extraction/depth-ablation-public-first-spk_emb_causal_100-ort-conv-int8-t1-f8-b4.json",
+        "result": {
+          "wall_rtf": 0.6088193444011267,
+          "process_cpu_rtf": 0.6021531454999999,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 38.778302191154566,
+          "chunk_cost_ms_p95": 53.837496601045125,
+          "chunk_cost_ms_max": 59.444466955028474,
+          "input_readiness_ms_max": 88.0,
+          "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+          "model": "spk_emb_causal_100",
+          "backend": "ort",
+          "threads": 1,
+          "separation_blocks": 4,
+          "depth_ablation": true,
+          "partial_int8": true,
+          "static_convolution_int8": true,
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "input_sha256": "4ec4ee3e1420b031208ae6f85d51ab889c6594c1c6179e18d5db05fbe793ba00",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "machine": "Linux-7.2.5-3-omarchy-x86_64-with-glibc2.44",
+          "cpu_affinity": [
+            2
+          ],
+          "command": [
+            "scripts/prototype-target-extraction.py",
+            "--blocks",
+            "4",
+            "--backend",
+            "ort",
+            "--int8",
+            "--static-int8",
+            "--case",
+            "depth-ablation-public-first",
+            "--mixture",
+            "target/target-speaker-extraction/public-mixture.wav",
+            "--target",
+            "target/target-speaker-extraction/public-target.wav",
+            "--competitor",
+            "target/target-speaker-extraction/public-competitor.wav",
+            "--enrollment",
+            "target/voice-reference-evaluation/enrollment.wav"
+          ],
+          "stream_can_keep_up": true,
+          "extractor_cpu_budget_pass": true,
+          "checks": null,
+          "graph_sha256": "557d33e6432beaadf04b10f22c6527d26de6aa94a8c9035508ade21f82baf4cb",
+          "acoustics": [
+            {
+              "seconds": [
+                0,
+                3
+              ],
+              "target_projection_gain": -0.5491647720336914,
+              "competitor_projection_gain": -0.3247327208518982,
+              "target_to_competitor_projection_improvement_db": 4.56353235244751,
+              "output_si_sdr_db": 5.067270278930664,
+              "mixture_si_sdr_db": 6.116610050201416
+            },
+            {
+              "seconds": [
+                3.2,
+                6.8
+              ],
+              "competitor_only_reduction_db": 13.258464813232422
+            },
+            {
+              "seconds": [
+                7,
+                10
+              ],
+              "target_projection_gain": -0.9405269622802734,
+              "competitor_projection_gain": -0.23179341852664948,
+              "target_to_competitor_projection_improvement_db": 12.165403366088867,
+              "output_si_sdr_db": 12.23620891571045,
+              "mixture_si_sdr_db": 8.960132598876953
+            }
+          ]
+        }
+      },
+      {
+        "artifact": "target/target-speaker-extraction/depth-ablation-public-spk_emb_causal_100-ort-conv-int8-t1-f8-b4.json",
+        "result": {
+          "wall_rtf": 0.6186049921961967,
+          "process_cpu_rtf": 0.6118027523000095,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 39.401591859630365,
+          "chunk_cost_ms_p95": 53.36690199328586,
+          "chunk_cost_ms_max": 59.47211099555716,
+          "input_readiness_ms_max": 88.0,
+          "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+          "model": "spk_emb_causal_100",
+          "backend": "ort",
+          "threads": 1,
+          "separation_blocks": 4,
+          "depth_ablation": true,
+          "partial_int8": true,
+          "static_convolution_int8": true,
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "input_sha256": "2f1f897ae5fe60a5c83d747f956eed1248dc72e6130b708e4b803027f766ad70",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "machine": "Linux-7.2.5-3-omarchy-x86_64-with-glibc2.44",
+          "cpu_affinity": [
+            2
+          ],
+          "command": [
+            "scripts/prototype-target-extraction.py",
+            "--blocks",
+            "4",
+            "--backend",
+            "ort",
+            "--export",
+            "--int8",
+            "--static-int8",
+            "--check",
+            "--case",
+            "depth-ablation-public",
+            "--mixture",
+            "target/target-speaker-extraction/disjoint-mixture.wav",
+            "--target",
+            "target/target-speaker-extraction/disjoint-target.wav",
+            "--competitor",
+            "target/target-speaker-extraction/disjoint-competitor.wav",
+            "--enrollment",
+            "target/voice-reference-evaluation/enrollment.wav"
+          ],
+          "stream_can_keep_up": true,
+          "extractor_cpu_budget_pass": true,
+          "checks": {
+            "upstream_max_abs_error": 7.450580596923828e-08,
+            "future_input_max_abs_error": 0.0,
+            "chunk_partition_max_abs_error": 8.195638656616211e-08,
+            "reset_max_abs_error": 0.0,
+            "backend_future_input_max_abs_error": 0.0,
+            "backend_vs_torch_rmse": 0.0011054564965888858
+          },
+          "graph_sha256": "557d33e6432beaadf04b10f22c6527d26de6aa94a8c9035508ade21f82baf4cb",
+          "acoustics": [
+            {
+              "seconds": [
+                0,
+                3
+              ],
+              "target_projection_gain": -0.8556950688362122,
+              "competitor_projection_gain": -0.2902197241783142,
+              "target_to_competitor_projection_improvement_db": 9.391841888427734,
+              "output_si_sdr_db": 11.04879379272461,
+              "mixture_si_sdr_db": 8.96019172668457
+            },
+            {
+              "seconds": [
+                3.2,
+                6.8
+              ],
+              "competitor_only_reduction_db": 12.99249267578125
+            },
+            {
+              "seconds": [
+                7,
+                10
+              ],
+              "target_projection_gain": -0.83607017993927,
+              "competitor_projection_gain": -0.2798798680305481,
+              "target_to_competitor_projection_improvement_db": 9.50542163848877,
+              "output_si_sdr_db": 6.649322986602783,
+              "mixture_si_sdr_db": 2.594764471054077
+            }
+          ]
+        }
+      },
+      {
+        "artifact": "target/target-speaker-extraction/depth-ablation-public-spk_emb_causal_100-torch-fp32-t1-f8-b4.json",
+        "result": {
+          "wall_rtf": 1.4698065830394627,
+          "process_cpu_rtf": 1.4557819808999983,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 93.61825369678105,
+          "chunk_cost_ms_p95": 108.00792321097106,
+          "chunk_cost_ms_max": 122.10269598290324,
+          "input_readiness_ms_max": 88.0,
+          "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+          "model": "spk_emb_causal_100",
+          "backend": "torch",
+          "threads": 1,
+          "separation_blocks": 4,
+          "depth_ablation": true,
+          "partial_int8": false,
+          "static_convolution_int8": false,
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "input_sha256": "2f1f897ae5fe60a5c83d747f956eed1248dc72e6130b708e4b803027f766ad70",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "machine": "Linux-7.2.5-3-omarchy-x86_64-with-glibc2.44",
+          "cpu_affinity": [
+            2
+          ],
+          "command": [
+            "scripts/prototype-target-extraction.py",
+            "--blocks",
+            "4",
+            "--check",
+            "--case",
+            "depth-ablation-public",
+            "--mixture",
+            "target/target-speaker-extraction/disjoint-mixture.wav",
+            "--target",
+            "target/target-speaker-extraction/disjoint-target.wav",
+            "--competitor",
+            "target/target-speaker-extraction/disjoint-competitor.wav",
+            "--enrollment",
+            "target/voice-reference-evaluation/enrollment.wav"
+          ],
+          "stream_can_keep_up": false,
+          "extractor_cpu_budget_pass": false,
+          "checks": {
+            "upstream_max_abs_error": 7.450580596923828e-08,
+            "future_input_max_abs_error": 0.0,
+            "chunk_partition_max_abs_error": 8.195638656616211e-08,
+            "reset_max_abs_error": 0.0,
+            "backend_future_input_max_abs_error": 0.0,
+            "backend_vs_torch_rmse": 0.0
+          },
+          "acoustics": [
+            {
+              "seconds": [
+                0,
+                3
+              ],
+              "target_projection_gain": -0.8536282777786255,
+              "competitor_projection_gain": -0.29338136315345764,
+              "target_to_competitor_projection_improvement_db": 9.276725769042969,
+              "output_si_sdr_db": 11.029077529907227,
+              "mixture_si_sdr_db": 8.96019172668457
+            },
+            {
+              "seconds": [
+                3.2,
+                6.8
+              ],
+              "competitor_only_reduction_db": 12.966951370239258
+            },
+            {
+              "seconds": [
+                7,
+                10
+              ],
+              "target_projection_gain": -0.8377367854118347,
+              "competitor_projection_gain": -0.2801108956336975,
+              "target_to_competitor_projection_improvement_db": 9.515551567077637,
+              "output_si_sdr_db": 6.6584391593933105,
+              "mixture_si_sdr_db": 2.594764471054077
+            }
+          ]
+        }
+      },
+      {
+        "artifact": "target/target-speaker-extraction/depth-ablation-swap-spk_emb_causal_100-ort-conv-int8-t1-f8-b4.json",
+        "result": {
+          "wall_rtf": 0.6863396895932965,
+          "process_cpu_rtf": 0.6766564997999999,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 43.715903795751366,
+          "chunk_cost_ms_p95": 61.094458017032586,
+          "chunk_cost_ms_max": 65.58430200675502,
+          "input_readiness_ms_max": 88.0,
+          "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+          "model": "spk_emb_causal_100",
+          "backend": "ort",
+          "threads": 1,
+          "separation_blocks": 4,
+          "depth_ablation": true,
+          "partial_int8": true,
+          "static_convolution_int8": true,
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "input_sha256": "47eae56040bec3eb63049c03cd2a1634b4ea8f50d37fe768b1b216d4d4606653",
+          "enrollment_sha256": "aa7fbc8eaa9b01124fa848080b648f008fa75abb248e1621e877cfb72e8edb46",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "machine": "Linux-7.2.5-3-omarchy-x86_64-with-glibc2.44",
+          "cpu_affinity": [
+            2
+          ],
+          "command": [
+            "scripts/prototype-target-extraction.py",
+            "--blocks",
+            "4",
+            "--backend",
+            "ort",
+            "--int8",
+            "--static-int8",
+            "--case",
+            "depth-ablation-swap",
+            "--enrollment",
+            "target/target-speaker-extraction/competitor-enrollment.wav",
+            "--target",
+            "target/target-speaker-extraction/target.wav",
+            "--competitor",
+            "target/target-speaker-extraction/competitor.wav"
+          ],
+          "stream_can_keep_up": true,
+          "extractor_cpu_budget_pass": true,
+          "checks": null,
+          "graph_sha256": "557d33e6432beaadf04b10f22c6527d26de6aa94a8c9035508ade21f82baf4cb",
+          "acoustics": [
+            {
+              "seconds": [
+                0,
+                3
+              ],
+              "target_projection_gain": -0.32681047916412354,
+              "competitor_projection_gain": -0.6754351258277893,
+              "target_to_competitor_projection_improvement_db": -6.305753707885742,
+              "output_si_sdr_db": -7.30850887298584,
+              "mixture_si_sdr_db": 0.04998131841421127
+            },
+            {
+              "seconds": [
+                3.2,
+                6.8
+              ],
+              "competitor_only_reduction_db": 1.2909131050109863
+            },
+            {
+              "seconds": [
+                7,
+                10
+              ],
+              "target_projection_gain": -0.45181804895401,
+              "competitor_projection_gain": -0.7119455933570862,
+              "target_to_competitor_projection_improvement_db": -3.94966459274292,
+              "output_si_sdr_db": -6.62048864364624,
+              "mixture_si_sdr_db": -1.6044985055923462
+            }
+          ]
+        }
+      },
+      {
+        "artifact": "target/target-speaker-extraction/primed-librispeech-spk_emb_causal_100-ort-conv-int8-t1-f8-b4-primed.json",
+        "result": {
+          "wall_rtf": 0.4462018690246623,
+          "process_cpu_rtf": 0.4428907291000005,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 28.42050121176193,
+          "chunk_cost_ms_p95": 31.877129187341776,
+          "chunk_cost_ms_max": 34.0330459875986,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 447.3918089643121,
+          "priming_cpu_ms": 444.1691490000004,
+          "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+          "model": "spk_emb_causal_100",
+          "backend": "ort",
+          "threads": 1,
+          "separation_blocks": 4,
+          "depth_ablation": true,
+          "partial_int8": true,
+          "static_convolution_int8": true,
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "input_sha256": "47eae56040bec3eb63049c03cd2a1634b4ea8f50d37fe768b1b216d4d4606653",
+          "enrollment_sha256": "f01cffd7a33fc29a1d9f2f0ac277fc8656c0794abe015ee5cc8dc55351fb6cba",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "machine": "Linux-7.2.5-3-omarchy-x86_64-with-glibc2.44",
+          "cpu_affinity": [
+            2
+          ],
+          "command": [
+            "scripts/prototype-target-extraction.py",
+            "--blocks",
+            "4",
+            "--prime-silence",
+            "--backend",
+            "ort",
+            "--int8",
+            "--static-int8",
+            "--check",
+            "--case",
+            "primed-librispeech",
+            "--target",
+            "target/target-speaker-extraction/target.wav",
+            "--competitor",
+            "target/target-speaker-extraction/competitor.wav"
+          ],
+          "stream_can_keep_up": true,
+          "extractor_cpu_budget_pass": true,
+          "checks": {
+            "upstream_max_abs_error": 1.862645149230957e-08,
+            "future_input_max_abs_error": 0.0,
+            "chunk_partition_max_abs_error": 1.4901161193847656e-08,
+            "reset_max_abs_error": 0.0,
+            "backend_future_input_max_abs_error": 0.0,
+            "backend_vs_torch_rmse": 0.0001480380306020379
+          },
+          "graph_sha256": "557d33e6432beaadf04b10f22c6527d26de6aa94a8c9035508ade21f82baf4cb",
+          "acoustics": [
+            {
+              "seconds": [
+                0,
+                3
+              ],
+              "target_projection_gain": -0.8108820915222168,
+              "competitor_projection_gain": -0.350035697221756,
+              "target_to_competitor_projection_improvement_db": 7.296907901763916,
+              "output_si_sdr_db": 4.144295692443848,
+              "mixture_si_sdr_db": 0.04998131841421127
+            },
+            {
+              "seconds": [
+                3.2,
+                6.8
+              ],
+              "competitor_only_reduction_db": 14.150432586669922
+            },
+            {
+              "seconds": [
+                7,
+                10
+              ],
+              "target_projection_gain": -0.7234511375427246,
+              "competitor_projection_gain": -0.23168134689331055,
+              "target_to_competitor_projection_improvement_db": 9.890362739562988,
+              "output_si_sdr_db": 3.240478038787842,
+              "mixture_si_sdr_db": -1.6044985055923462
+            }
+          ]
+        }
+      },
+      {
+        "artifact": "target/target-speaker-extraction/primed-public-full-spk_emb_causal_100-ort-conv-int8-t1-f8-primed.json",
+        "result": {
+          "wall_rtf": 0.5874573637731373,
+          "process_cpu_rtf": 0.5833507705000003,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 37.41766648236543,
+          "chunk_cost_ms_p95": 41.058582603000104,
+          "chunk_cost_ms_max": 43.33332000533119,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 618.9521459746175,
+          "priming_cpu_ms": 614.2831669999999,
+          "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+          "model": "spk_emb_causal_100",
+          "backend": "ort",
+          "threads": 1,
+          "separation_blocks": 6,
+          "depth_ablation": false,
+          "partial_int8": true,
+          "static_convolution_int8": true,
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "input_sha256": "4ec4ee3e1420b031208ae6f85d51ab889c6594c1c6179e18d5db05fbe793ba00",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "machine": "Linux-7.2.5-3-omarchy-x86_64-with-glibc2.44",
+          "cpu_affinity": [
+            2
+          ],
+          "command": [
+            "scripts/prototype-target-extraction.py",
+            "--prime-silence",
+            "--backend",
+            "ort",
+            "--int8",
+            "--static-int8",
+            "--check",
+            "--case",
+            "primed-public-full",
+            "--mixture",
+            "target/target-speaker-extraction/public-mixture.wav",
+            "--target",
+            "target/target-speaker-extraction/public-target.wav",
+            "--competitor",
+            "target/target-speaker-extraction/public-competitor.wav",
+            "--enrollment",
+            "target/voice-reference-evaluation/enrollment.wav"
+          ],
+          "stream_can_keep_up": true,
+          "extractor_cpu_budget_pass": true,
+          "checks": {
+            "upstream_max_abs_error": 8.940696716308594e-08,
+            "future_input_max_abs_error": 0.0,
+            "chunk_partition_max_abs_error": 3.5762786865234375e-07,
+            "reset_max_abs_error": 0.0,
+            "backend_future_input_max_abs_error": 0.0,
+            "backend_vs_torch_rmse": 0.0015778138767927885
+          },
+          "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+          "acoustics": [
+            {
+              "seconds": [
+                0,
+                3
+              ],
+              "target_projection_gain": -1.0541284084320068,
+              "competitor_projection_gain": -0.19126951694488525,
+              "target_to_competitor_projection_improvement_db": 14.824954986572266,
+              "output_si_sdr_db": 13.647836685180664,
+              "mixture_si_sdr_db": 6.116610050201416
+            },
+            {
+              "seconds": [
+                3.2,
+                6.8
+              ],
+              "competitor_only_reduction_db": 16.701053619384766
+            },
+            {
+              "seconds": [
+                7,
+                10
+              ],
+              "target_projection_gain": -1.0598055124282837,
+              "competitor_projection_gain": -0.09088343381881714,
+              "target_to_competitor_projection_improvement_db": 21.334829330444336,
+              "output_si_sdr_db": 17.70475196838379,
+              "mixture_si_sdr_db": 8.960132598876953
+            }
+          ]
+        }
+      },
+      {
+        "artifact": "target/target-speaker-extraction/primed-public-long-spk_emb_causal_100-ort-conv-int8-t1-f8-primed.json",
+        "result": {
+          "wall_rtf": 0.6331598344515078,
+          "process_cpu_rtf": 0.62854724006,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 40.48336537413733,
+          "chunk_cost_ms_p95": 49.105433843214996,
+          "chunk_cost_ms_max": 67.86498799920082,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 690.9284809953533,
+          "priming_cpu_ms": 685.5287940000005,
+          "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+          "model": "spk_emb_causal_100",
+          "backend": "ort",
+          "threads": 1,
+          "separation_blocks": 6,
+          "depth_ablation": false,
+          "partial_int8": true,
+          "static_convolution_int8": true,
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "input_sha256": "8c5bce93d2f92d2e7860b031a364f30a8418105d4010e9b42313defc539f27c6",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "machine": "Linux-7.2.5-3-omarchy-x86_64-with-glibc2.44",
+          "cpu_affinity": [
+            2
+          ],
+          "command": [
+            "scripts/prototype-target-extraction.py",
+            "--prime-silence",
+            "--backend",
+            "ort",
+            "--int8",
+            "--static-int8",
+            "--case",
+            "primed-public-long",
+            "--mixture",
+            "target/voice-reference-evaluation/scenario.wav",
+            "--enrollment",
+            "target/voice-reference-evaluation/enrollment.wav"
+          ],
+          "stream_can_keep_up": true,
+          "extractor_cpu_budget_pass": true,
+          "checks": null,
+          "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+          "retained_scope_acoustics": [
+            {
+              "seconds": [
+                3,
+                8
+              ],
+              "target_projection_gain": -1.0592178106307983,
+              "competitor_projection_gain": -0.23074552416801453,
+              "target_to_competitor_projection_improvement_db": 13.237039566040039,
+              "output_si_sdr_db": 13.056024551391602,
+              "mixture_si_sdr_db": 5.704476833343506
+            },
+            {
+              "seconds": [
+                8.5,
+                13.5
+              ],
+              "target_projection_gain": -1.0611578226089478,
+              "competitor_projection_gain": -0.09557731449604034,
+              "target_to_competitor_projection_improvement_db": 20.908504486083984,
+              "output_si_sdr_db": 16.436904907226562,
+              "mixture_si_sdr_db": 7.493766784667969
+            },
+            {
+              "seconds": [
+                13.7,
+                33.47
+              ],
+              "competitor_only_reduction_db": 19.20688247680664
+            },
+            {
+              "seconds": [
+                42.03,
+                48
+              ],
+              "target_projection_gain": -1.058950662612915,
+              "competitor_projection_gain": 0.0,
+              "competitor_absent": true,
+              "output_si_sdr_db": 16.066619873046875,
+              "mixture_si_sdr_db": 18.004133224487305
+            }
+          ],
+          "deferred_quiet_under_louder_competitor_exploratory": [
+            {
+              "seconds": [
+                33.5,
+                40
+              ],
+              "target_projection_gain": -0.908567488193512,
+              "competitor_projection_gain": -0.021552978083491325,
+              "target_to_competitor_projection_improvement_db": 32.49699783325195,
+              "output_si_sdr_db": 4.353927135467529,
+              "mixture_si_sdr_db": -14.63015365600586
+            }
+          ],
+          "calibration_overlap_note": "Calibration used source [0,5); first normal interval includes two seconds of calibration. Later intervals are disjoint. Pause score excludes first 200 ms release and final 30 ms resampling boundary; target-only body score excludes first 30 ms competitor resampling tail. Onsets are scored separately; these are PCM projection checks, not word-intelligibility proof.",
+          "onset_projections_first_100ms": [
+            {
+              "seconds": [
+                3,
+                3.1
+              ],
+              "target_projection_gain": -2.521740198135376,
+              "competitor_projection_gain": -0.6129128932952881,
+              "target_to_competitor_projection_improvement_db": 12.286031723022461,
+              "output_si_sdr_db": -21.593677520751953,
+              "mixture_si_sdr_db": -23.62901496887207
+            },
+            {
+              "seconds": [
+                8.5,
+                8.6
+              ],
+              "target_projection_gain": -1.0292696952819824,
+              "competitor_projection_gain": -0.21044333279132843,
+              "target_to_competitor_projection_improvement_db": 13.787879943847656,
+              "output_si_sdr_db": 14.971549987792969,
+              "mixture_si_sdr_db": 10.710829734802246
+            },
+            {
+              "seconds": [
+                42,
+                42.1
+              ],
+              "target_projection_gain": -1.0186177492141724,
+              "competitor_projection_gain": 0.5623640418052673,
+              "target_to_competitor_projection_improvement_db": 5.159873962402344,
+              "output_si_sdr_db": 15.027524948120117,
+              "mixture_si_sdr_db": 14.291911125183105
+            }
+          ]
+        }
+      },
+      {
+        "artifact": "target/target-speaker-extraction/primed-quiet-alone-spk_emb_causal_100-ort-conv-int8-t1-f8-primed.json",
+        "result": {
+          "wall_rtf": 0.3107828473497648,
+          "process_cpu_rtf": 0.3098151884,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 19.795085818456354,
+          "chunk_cost_ms_p95": 20.951672398950905,
+          "chunk_cost_ms_max": 34.33284698985517,
+          "input_readiness_ms_max": 88.0,
+          "priming_silence_ms": 1024,
+          "priming_wall_ms": 307.47876898385584,
+          "priming_cpu_ms": 306.56044299999996,
+          "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+          "model": "spk_emb_causal_100",
+          "backend": "ort",
+          "threads": 1,
+          "separation_blocks": 6,
+          "depth_ablation": false,
+          "partial_int8": true,
+          "static_convolution_int8": true,
+          "checkpoint_sha256": "42b73219eefefcbba4b5da0dcb89dce292359c9f93b1a951c7b6d196da2155b3",
+          "input_sha256": "c27deef3196d2a6c6cbbd0f68b7297b1f7d2ff3b47461c91ecbdbde4c580d511",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "source_commit": "2a540977a348fbaa92e623210505430e2cec608d",
+          "speaker_source_commit": "8f53b6485d9f88a207bd17e7f8dba899495ec794",
+          "torch_version": "2.9.1+cpu",
+          "torchaudio_version": "2.9.1+cpu",
+          "machine": "Linux-7.2.5-3-omarchy-x86_64-with-glibc2.44",
+          "cpu_affinity": [
+            2
+          ],
+          "command": [
+            "scripts/prototype-target-extraction.py",
+            "--prime-silence",
+            "--backend",
+            "ort",
+            "--int8",
+            "--static-int8",
+            "--case",
+            "primed-quiet-alone",
+            "--mixture",
+            "target/target-speaker-extraction/quiet-alone-mixture.wav",
+            "--target",
+            "target/target-speaker-extraction/quiet-alone-target.wav",
+            "--competitor",
+            "target/target-speaker-extraction/quiet-alone-competitor.wav",
+            "--enrollment",
+            "target/voice-reference-evaluation/enrollment.wav"
+          ],
+          "stream_can_keep_up": true,
+          "extractor_cpu_budget_pass": true,
+          "checks": null,
+          "graph_sha256": "ca81c6ffa00e5b4185779b74aa6d5555721d135db3badca7e05e05f3fa78923f",
+          "acoustics": [
+            {
+              "seconds": [
+                0,
+                3
+              ],
+              "target_projection_gain": -0.9920499324798584,
+              "competitor_projection_gain": 0.0,
+              "competitor_absent": true,
+              "output_si_sdr_db": 9.717309951782227,
+              "mixture_si_sdr_db": 6.967108726501465
+            },
+            {
+              "seconds": [
+                3.2,
+                6.8
+              ],
+              "noise_only_reduction_db": 3.4217753410339355
+            },
+            {
+              "seconds": [
+                7,
+                10
+              ],
+              "target_projection_gain": -1.0627515316009521,
+              "competitor_projection_gain": 0.0,
+              "competitor_absent": true,
+              "output_si_sdr_db": 10.55999755859375,
+              "mixture_si_sdr_db": 6.893184185028076
+            }
+          ]
+        }
+      },
+      {
+        "artifact": "target/target-speaker-extraction/state-priming-public.json",
+        "result": {
+          "wall_rtf": 0.45549408095539545,
+          "process_cpu_rtf": 0.45108890279999975,
+          "chunk_ms": 64,
+          "chunk_cost_ms_mean": 29.012361844292705,
+          "chunk_cost_ms_p95": 39.86661358503624,
+          "chunk_cost_ms_max": 44.43029500544071,
+          "input_readiness_ms_max": 88.0,
+          "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
+          "separation_blocks": 4,
+          "graph_sha256": "557d33e6432beaadf04b10f22c6527d26de6aa94a8c9035508ade21f82baf4cb",
+          "priming_silence_seconds": 1.024,
+          "priming_wall_seconds": [
+            0.4180891989963129
+          ],
+          "priming_is_added_input_history": true,
+          "input_sha256": "4ec4ee3e1420b031208ae6f85d51ab889c6594c1c6179e18d5db05fbe793ba00",
+          "enrollment_sha256": "c1b40bd1ade5b4147a8d3d38b5bab3ad8468081da76750055f07e1ab20ad8116",
+          "acoustics": [
+            {
+              "seconds": [
+                0,
+                3
+              ],
+              "target_projection_gain": -0.8388761281967163,
+              "competitor_projection_gain": -0.26032766699790955,
+              "target_to_competitor_projection_improvement_db": 10.16355037689209,
+              "output_si_sdr_db": 9.409258842468262,
+              "mixture_si_sdr_db": 6.116610050201416
+            },
+            {
+              "seconds": [
+                3.2,
+                6.8
+              ],
+              "competitor_only_reduction_db": 11.986435890197754
+            },
+            {
+              "seconds": [
+                7,
+                10
+              ],
+              "target_projection_gain": -0.943617582321167,
+              "competitor_projection_gain": -0.21434266865253448,
+              "target_to_competitor_projection_improvement_db": 12.873746871948242,
+              "output_si_sdr_db": 12.25177001953125,
+              "mixture_si_sdr_db": 8.960132598876953
+            }
+          ]
+        }
+      }
+    ],
+    "synthetic_kernel_timing_screen": {
+      "artifact": "target/target-speaker-extraction/recurrent-quantization-screen.json",
+      "verdict": "INCONCLUSIVE",
+      "reason": "Other build jobs contended with nice-19 process; synthetic inputs also differ between graphs. Not used to rank kernels or establish a speedup."
+    },
+    "extra_fixtures": {
+      "public-preroll-fixture.json": {
+        "input": "public-mixture.wav",
+        "input_rate": 48000,
+        "added_silence_seconds": 1,
+        "purpose": "test whether preceding silence changes the earlier failure; not a cold-start fix or added future audio",
+        "sha256": "5a9ef02d1c9f3705655170087a336dc8e193704b8938a928e43fc0efa4898464"
+      },
+      "quiet-alone-fixture.json": {
+        "target_source": "public-target.wav",
+        "noise_source": "public-noise.wav",
+        "target_gain": 0.25,
+        "competitor": "none",
+        "scope": "ordinary quiet target, independent enrollment; retains known calibration overlap of first public crop",
+        "files": {
+          "quiet-alone-mixture.wav": "c27deef3196d2a6c6cbbd0f68b7297b1f7d2ff3b47461c91ecbdbde4c580d511",
+          "quiet-alone-target.wav": "e789313d052e2d371d1fd626a951fa4a036033d8e8269657b1437542381813c1",
+          "quiet-alone-competitor.wav": "db6cb1fec610499cecef98510cdef6e1059d0c4a3b2f48d3598b368b14ea021b"
+        }
+      }
+    },
+    "code_provenance_note": "Runs span successive runner edits. Original report and script hash are retained; latest runner hash identifies final reproduction source, not every earlier run snapshot.",
+    "live_trial_after_experiments": {
+      "status": {
+        "attn_limit": 100.0,
+        "chain": {
+          "node_present": true,
+          "running": true
+        },
+        "defaults": {
+          "attn_limit": 100.0,
+          "model": "dpdfnet2_48khz_hr"
+        },
+        "enabled": true,
+        "engine": null,
+        "inference": null,
+        "latency_samples": 9120,
+        "mic": {
+          "active": "alsa_input.usb-3142_fifine_Microphone-00.analog-stereo",
+          "configured": "alsa_input.usb-3142_fifine_Microphone-00.analog-stereo",
+          "fallback_active": false
+        },
+        "mode": "suppress",
+        "model": "dpdfnet8_48khz_hr",
+        "profile": "alsa_input.usb-3142_fifine_Microphone-00.analog-stereo",
+        "protection": {
+          "reason": "waiting for detector status",
+          "requested": true,
+          "state": "unavailable"
+        },
+        "tray": "sni",
+        "version": "0.10.1"
+      },
+      "microphone_idle_before_relaunch": true,
+      "note": "Frozen existing trial relaunched after all experiment inference stopped. Saved Quality and protection request restored; no consumer means runtime engine/detector await audio. No extraction integration or enrollment change."
+    }
+  }
 }

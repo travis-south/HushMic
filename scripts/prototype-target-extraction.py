@@ -34,7 +34,7 @@ def digest(path):
     return checksum.hexdigest()
 
 
-def load_model():
+def load_model(blocks=6):
     for folder, commit in [("upstream", SOURCE), ("wespeaker", SPEAKER_SOURCE)]:
         actual = subprocess.check_output(["git", "-C", str(WORK / folder), "rev-parse", "HEAD"], text=True).strip()
         assert actual == commit, f"Wrong {folder} source revision"
@@ -59,7 +59,10 @@ def load_model():
     model = TSE_BSRNN_SPK(config).eval()
     state = torch.load(folder / "avg_model.pt", map_location="cpu", weights_only=True)["models"][0]
     model.load_state_dict(state, strict=True)
-    return model
+    assert len(model.sep_model.separator.separation) == 6
+    # Depth ablation only: these retained weights were trained with six blocks.
+    model.sep_model.separator.separation = model.sep_model.separator.separation[:blocks]
+    return model.eval()
 
 
 def audio(path):
@@ -143,15 +146,18 @@ class ExportCore(torch.nn.Module):
 def ort_core(model, cues, frames, threads, export, quantize, static_int8=False):
     import onnxruntime as ort
     assert set(cues) == {"spkemb"}, "ONNX pilot supports the embedding-conditioned candidate"
-    graph = WORK / f"bsrnn-causal-f{frames}.onnx"
-    states = [torch.zeros(1, model.sep_model.nband, 256) for _ in range(12)]
-    names = [f"state_{i}" for i in range(12)]
+    blocks = len(model.sep_model.separator.separation)
+    suffix = f"-b{blocks}" if blocks != 6 else ""
+    graph = WORK / f"bsrnn-causal-f{frames}{suffix}.onnx"
+    states = [torch.zeros(1, model.sep_model.nband, 256) for _ in range(2 * blocks)]
+    names = [f"state_{i}" for i in range(2 * blocks)]
     if export:
-        torch.onnx.export(ExportCore(model),
+        torch.onnx.export(ExportCore(model).eval(),
                           (torch.randn(1, 2, 257, frames), cues["spkemb"], *states),
                           graph, input_names=["spectrum", "reference", *names],
-                          output_names=["extracted", *[f"next_{i}" for i in range(12)]],
+                          output_names=["extracted", *[f"next_{i}" for i in range(len(states))]],
                           opset_version=17, dynamo=False)
+        assert not any(module.training for module in model.modules()), "Export changed inference mode"
     static_graph = graph.with_stem(graph.stem + "-conv-int8")
     if static_int8 and (export or not static_graph.exists()):
         from onnxruntime.quantization import CalibrationDataReader, QuantFormat, QuantType, quantize_static
@@ -219,7 +225,7 @@ def ort_core(model, cues, frames, threads, export, quantize, static_int8=False):
     return run
 
 
-def extract(model, samples, cues, frames, core=spectrum):
+def extract(model, samples, cues, frames, core=spectrum, prime_silence=False):
     """Replay a stream at 16 kHz; bounded input windows and persistent LSTM state.
 
     Each frame reads only through center+256 samples. Outputs are emitted once
@@ -229,6 +235,14 @@ def extract(model, samples, cues, frames, core=spectrum):
     reset_cache(model)
     if hasattr(core, "reset"):
         core.reset()
+    prime_start, prime_cpu_start = time.perf_counter(), time.process_time()
+    if prime_silence:
+        # Synthetic past only; no microphone samples or future input. Keep the
+        # 128-frame history identical across FP32 chunk partitions.
+        for first in range(0, 128, frames):
+            core(model, torch.zeros(1, 257, min(frames, 128 - first),
+                                    dtype=torch.complex64), cues)
+    prime_wall, prime_cpu = time.perf_counter() - prime_start, time.process_time() - prime_cpu_start
     win, hop = model.sep_model.win, model.sep_model.stride
     assert win == 512 and hop == 128 and samples.shape[0] == 1
     window = torch.hann_window(win)
@@ -276,11 +290,14 @@ def extract(model, samples, cues, frames, core=spectrum):
         "chunk_cost_ms_p95": float(np.percentile(costs, 95)),
         "chunk_cost_ms_max": max(costs),
         "input_readiness_ms_max": max(readiness),
+        "priming_silence_ms": 1024 if prime_silence else 0,
+        "priming_wall_ms": prime_wall * 1000 if prime_silence else 0,
+        "priming_cpu_ms": prime_cpu * 1000 if prime_silence else 0,
         "note": "Extractor only. Readiness excludes computation, resampling, worker and host buffering.",
     }
 
 
-def check(model, mixture, enroll, cues, frames, core):
+def check(model, mixture, enroll, cues, frames, core, prime_silence=False):
     """One runnable regression check for equivalence, state reset and causality."""
     small = mixture[:, :8192]
     torch.manual_seed(42)
@@ -289,23 +306,25 @@ def check(model, mixture, enroll, cues, frames, core):
     cached, _ = extract(model, small, cues, frames)
     error = float(np.max(np.abs(ordinary - cached)))
     assert error < 2e-4, f"Upstream/streaming parity failed: {error}"
+    if prime_silence:
+        cached, _ = extract(model, small, cues, frames, prime_silence=True)
     changed = small.clone()
     changed[:, 4096:] = torch.randn_like(changed[:, 4096:]) * 0.2
-    future, _ = extract(model, changed, cues, frames)
+    future, _ = extract(model, changed, cues, frames, prime_silence=prime_silence)
     # Chunk-wide INT8 activation scales may use every frame in the current
     # chunk. Only output whose declared input deadline precedes the change
     # must remain identical; the maximum readiness is (frames-1)*128 + 512.
     emitted = 4096 - ((frames - 1) * 128 + 512)
     causal_error = float(np.max(np.abs(cached[:emitted] - future[:emitted])))
     assert causal_error < 2e-5, f"Future input affects emitted audio: {causal_error}"
-    partitioned, _ = extract(model, small, cues, 3)
+    partitioned, _ = extract(model, small, cues, 3, prime_silence=prime_silence)
     partition_error = float(np.max(np.abs(cached - partitioned)))
     assert partition_error < 2e-4, f"Chunk boundary/state parity failed: {partition_error}"
-    output, _ = extract(model, small, cues, frames, core)
-    reset_output, _ = extract(model, small, cues, frames, core)
+    output, _ = extract(model, small, cues, frames, core, prime_silence)
+    reset_output, _ = extract(model, small, cues, frames, core, prime_silence)
     reset_error = float(np.max(np.abs(output - reset_output)))
     assert reset_error < 1e-6, f"State leaked across streams: {reset_error}"
-    backend_future, _ = extract(model, changed, cues, frames, core)
+    backend_future, _ = extract(model, changed, cues, frames, core, prime_silence)
     backend_causal_error = float(np.max(np.abs(output[:emitted] - backend_future[:emitted])))
     assert backend_causal_error < 2e-5, f"Backend reads future audio: {backend_causal_error}"
     return {"upstream_max_abs_error": error, "future_input_max_abs_error": causal_error,
@@ -321,12 +340,16 @@ def metrics(output, mixture, target, competitor, intervals):
         y, t, c, m = output[a:b], target[a:b], competitor[a:b], mixture[a:b]
         entry = {"seconds": [start, end]}
         if float(np.dot(t, t)) < 1e-8:
-            entry["competitor_only_reduction_db"] = float(10 * np.log10((np.dot(m, m) + 1e-12) / (np.dot(y, y) + 1e-12)))
+            key = "competitor_only_reduction_db" if float(np.dot(c, c)) >= 1e-8 else "noise_only_reduction_db"
+            entry[key] = float(10 * np.log10((np.dot(m, m) + 1e-12) / (np.dot(y, y) + 1e-12)))
         else:
             coefficients = np.linalg.lstsq(np.stack((t, c), 1), y, rcond=None)[0]
             entry["target_projection_gain"] = float(coefficients[0])
             entry["competitor_projection_gain"] = float(coefficients[1])
-            entry["target_to_competitor_projection_improvement_db"] = float(20 * np.log10((abs(coefficients[0]) + 1e-12) / (abs(coefficients[1]) + 1e-12)))
+            if float(np.dot(c, c)) >= 1e-8:
+                entry["target_to_competitor_projection_improvement_db"] = float(20 * np.log10((abs(coefficients[0]) + 1e-12) / (abs(coefficients[1]) + 1e-12)))
+            else:
+                entry["competitor_absent"] = True
             def si_sdr(value):
                 value, desired = value - value.mean(), t - t.mean()
                 projection = desired * np.dot(value, desired) / (np.dot(desired, desired) + 1e-12)
@@ -340,6 +363,10 @@ def metrics(output, mixture, target, competitor, intervals):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--threads", type=int, default=1)
+    parser.add_argument("--blocks", type=int, choices=(4, 6), default=6,
+                        help="Four-block depth ablation; six is the trained architecture")
+    parser.add_argument("--prime-silence", action="store_true",
+                        help="Warm recurrent state with 1.024 s of synthetic past silence")
     parser.add_argument("--int8", action="store_true")
     parser.add_argument("--frames", type=int, default=8)
     parser.add_argument("--backend", choices=("torch", "ort"), default="torch")
@@ -356,11 +383,12 @@ def main():
     assert args.case.replace("-", "").replace("_", "").isalnum()
     assert not args.static_int8 or (args.backend == "ort" and args.int8)
     assert not args.int8 or args.backend == "ort", "INT8 pilot uses ONNX Runtime"
+    assert not args.prime_silence or args.frames == 8, "Priming pilot uses eight-frame chunks"
     torch.set_num_threads(args.threads)
     torch.set_num_interop_threads(1)
     torch.manual_seed(42)
     with torch.inference_mode():
-        model = load_model()
+        model = load_model(args.blocks)
         mixture = audio(args.mixture)
         enroll = audio(args.enrollment)
         cues = reference(model, enroll)
@@ -368,11 +396,13 @@ def main():
         if args.backend == "ort":
             core = ort_core(model, cues, args.frames, args.threads, args.export, args.int8, args.static_int8)
         enable_cache(model)
-        checks = check(model, mixture, enroll, cues, args.frames, core) if args.check else None
-        output, performance = extract(model, mixture, cues, args.frames, core)
+        checks = check(model, mixture, enroll, cues, args.frames, core, args.prime_silence) if args.check else None
+        output, performance = extract(model, mixture, cues, args.frames, core, args.prime_silence)
         performance.update({"model": MODEL, "backend": args.backend, "threads": args.threads,
+                            "separation_blocks": args.blocks, "depth_ablation": args.blocks != 6,
                             "partial_int8": args.int8, "static_convolution_int8": args.static_int8,
                             "checkpoint_sha256": WEIGHTS_SHA,
+                            "script_sha256": digest(Path(__file__)),
                             "input_sha256": digest(args.mixture), "enrollment_sha256": digest(args.enrollment),
                             "source_commit": SOURCE, "speaker_source_commit": SPEAKER_SOURCE,
                             "torch_version": torch.__version__, "torchaudio_version": torchaudio.__version__,
@@ -392,6 +422,10 @@ def main():
                                                 [(0, 3), (3.2, 6.8), (7, 10)])
         precision = "conv-int8" if args.static_int8 else ("int8" if args.int8 else "fp32")
         tag = f"{args.case}-{MODEL}-{args.backend}-{precision}-t{args.threads}-f{args.frames}"
+        if args.blocks != 6:
+            tag += f"-b{args.blocks}"
+        if args.prime_silence:
+            tag += "-primed"
         sf.write(WORK / f"{tag}.wav", output, 16000, subtype="FLOAT")
         (WORK / f"{tag}.json").write_text(json.dumps(performance, indent=2) + "\n")
         print(json.dumps(performance, indent=2), flush=True)
