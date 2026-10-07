@@ -13,8 +13,9 @@ extraction, beyond the current whole-mixture presence gate.
 
 **The tested model is not ready for HushMic.** Initial runs exceeded the CPU
 budget and lost target speech. The follow-up below improves the speech-loss case
-and demonstrates lower CPU cost in later runs, but combined-worker latency,
-speech preservation and sustained performance under load remain unverified.
+and demonstrates lower CPU cost in later runs. The real 48 kHz pipeline below
+exposes runtime and speaker-selection limits; live-worker latency, word
+preservation and sustained performance remain unverified.
 
 ## Follow-up: warm the recurrent state
 
@@ -74,6 +75,127 @@ streams; and the downloadable Voce SpeakerBeam-SS checkpoint lacks a model card,
 matching public implementation and verified model terms. Pinned source and
 acquisition evidence are summarized in the results file. No candidate was
 packaged or added to the live app.
+
+## Follow-up: actual 48 kHz pipeline
+
+`scripts/prototype-extraction-pipeline.py` now feeds bounded, stateful sinc
+conversion from 48 to 16 kHz, extraction, conversion back to 48 kHz, and optionally
+the actual native INT8 High Quality denoiser. Its Rust bridge reuses
+`StreamDenoiser`, asserts the native engine, and rejects inference errors. No
+production DSP, settings or enrollment changed. At the start of this work the
+trial app was stopped; this harness does not start it.
+
+Resampler partition checks match the whole-file transform exactly in both
+directions. Native output is identical across unequal packet partitions, with
+its 2,400-sample algorithmic delay drained and removed only for acoustic scoring.
+Extractor checks cover upstream parity, reset, partitioning and future-input
+independence. The five-block graph executes 128 QLinearConv and ten
+DynamicQuantizeLSTM kernels per chunk; removing blocks remains an ablation,
+not a separately trained compact model.
+
+The full fifty-second public scenario was replayed on this shared i5-1235U
+desktop. Most runs used one thread on CPU 2; two-thread runs used CPUs 0 and 2,
+which are different physical cores. Other desktop workloads were active and
+changed between runs. No other processes or power settings were changed.
+Synthetic-silence priming and loading are excluded from streaming costs.
+
+| Configuration | CPU seconds/audio second | Maximum paced output availability |
+| --- | ---: | ---: |
+| Six blocks + High Quality, four-frame chunks | 1.60 | 31,473 ms simulated |
+| Six blocks alone, eight-frame chunks | 0.79 | 338 ms |
+| Six blocks alone, four-frame chunks | 0.96 | 773 ms |
+| Five blocks alone, eight-frame chunks | 0.86 | 419 ms |
+| Four blocks alone, first run | 0.52 | 162 ms |
+| Four blocks alone, repeat | 0.75 | 211 ms |
+| Four blocks, four-frame chunks, first full stream | 0.54 | 184 ms |
+| Four blocks, four-frame chunks, repeated full stream | 0.72 | 122 ms |
+| Four blocks, four-frame chunks, quiet target, pinned | 0.82 | 579 ms |
+| Four blocks, four-frame chunks, quiet target, normal scheduling | 0.47 | 124 ms |
+| Six blocks alone, two threads | 1.93 | 3,303 ms |
+| Six blocks, two threads, spinning disabled, ten-second crop | 1.57 | 651 ms |
+
+Availability tracks the earliest real source sample in each emitted packet;
+paced runs also record actual wall-clock availability. The screen reserves
+another 10 ms for a host quantum, requiring availability within 190 ms. It is
+not a PipeWire or production-worker latency pass. Earlier runners summed CPU
+inside chunk processing; the final runner also counts CPU during paced waits,
+including idle thread spinning. The two-thread CPU result above is therefore
+a lower bound. The first cascade screen, with precomputed input downsampling,
+used 0.71 CPU seconds/audio second but already missed latency at 329 ms. The
+subsequent fully streaming eight-frame cascade used 1.05 and reached 3,343 ms
+of simulated backlog. These variable results are retained, not averaged into
+a shipping claim.
+
+Adding High Quality after extraction improved normal-overlap projections to
+16–25 dB and target-free reduction to about 41 dB. It worsened target-only
+SI-SDR from about 15.8 dB for extraction alone to 13.2 dB (input: 18.0 dB).
+Four blocks alone reduced the target-free core by 13.0 dB, with 10.1/12.6 dB
+overlap selection and target projection magnitudes 0.84/0.91. Its target-only
+SI-SDR was 11.9 dB. Five blocks improved those quality scores somewhat but
+missed the runtime limits. The four-block repeat used the same fixture, graph
+and enrollment inputs while its availability crossed 200 ms: one passing
+runtime screen is insufficient.
+Scores retain the calibration-overlap caveat; quiet speech under a louder
+competitor remains outside acoustic acceptance.
+
+Four blocks with four-frame chunks passed both fifty-second paced screens.
+Ordinary quiet speech retained projection magnitudes 0.82–0.83 and slightly
+improved SI-SDR (6.9–7.0 to 7.4–7.5 dB). Its pinned runtime failed; normal OS
+scheduling passed. These are conditional runtime results, not a worker guarantee.
+The independent LibriSpeech case gave 7.2/10.0 dB selection and 14.1 dB pause
+reduction with the original reference. Swapping enrollment to the other speaker
+reduced selection to 0.5/3.8 dB despite separate enrollment utterances. An FP32
+control also gave only 0.7/3.9 dB, with FP32/INT8 waveform RMSE 0.00039. The
+weak alternate identity is therefore present without INT8: changing precision
+alone does not repair the reduced-depth model.
+
+The saved, already aligned ordinary High Quality baseline scores 5.6 dB SI-SDR
+on the same target-only core, versus 18.0 dB for the input. It is historical,
+not a simultaneous runtime control. This puts the lower-than-input extraction
+scores in context: waveform SI-SDR alone cannot establish an audible regression
+relative to the accepted app. Word preservation and listening remain open.
+
+**No configuration has reliably passed the shipping limits.** Cascading both
+processors adds cost and distortion; extraction as the sole processor deserves
+further work, but cutting trained blocks sacrifices fidelity. A properly trained
+smaller model or a materially faster runtime is still needed, alongside model
+terms, word/onset preservation and live-worker checks. Upsampling the 16 kHz
+model output does not restore frequencies above 8 kHz.
+
+The full model on the P-core pool reached 188 ms for the quiet screen, but used
+0.85 CPU seconds/audio second. Its four-frame run with normal scheduling used
+1.69 and fell 7.4 seconds behind. The already installed OpenVINO 2026.3.1 SDK
+accepted both the convolution-INT8 and dynamic-INT8 graphs. Its profiling showed
+128 INT8 convolution kernels but 18 FP32 reference LSTM sequences, including
+when importing the dynamic-INT8 graph. Both variants exceeded one CPU
+second/audio second and accumulated seconds of delay; its exposed devices were
+CPU only. A separately installed, ignored ORT 1.30.0 Python wheel also missed
+the quiet screen (0.93 CPU seconds/audio second, 301 ms availability). These
+shared-desktop runs do not establish a controlled speed ranking between SDKs;
+none establishes a faster passing full-model configuration.
+
+Build the bridge and reproduce the four-block paced screen:
+
+```bash
+cargo build --release -p hushmic-denoiser --features native --example prototype_pipeline
+PYTHONDONTWRITEBYTECODE=1 taskset -c 2 target/voice-reference-evaluation/venv/bin/python \
+  scripts/prototype-extraction-pipeline.py --paced --check --extractor-only \
+  --frames 4 --blocks 4 --case reproduce-pipeline-b4-f4
+```
+
+Omit `--extractor-only` to measure the native High Quality cascade. Use
+`--frames 4 --export` for its four-frame graph, or `--blocks 5 --export` for
+the five-block ablation. `--ort-threads 2 --no-spin` reproduces the alternative
+thread setting, documented in [ONNX Runtime's threading guide](https://onnxruntime.ai/docs/performance/tune-performance/threading.html)
+and checked through Context7. `--backend openvino` reuses the isolated SDK and
+records executed kernels; it is not an app backend. Its CPU configuration follows
+the [OpenVINO scheduling documentation](https://github.com/openvinotoolkit/openvino/blob/master/docs/articles_en/openvino-workflow/running-inference/inference-devices-and-modes/cpu-device/performance-hint-and-thread-scheduling.rst).
+WAVs, per-chunk timing traces and JSON remain in the ignored experiment directory.
+Results are recorded in `docs/target-speaker-extraction-results.json`. Earlier
+runner hashes were read at completion while files could be edited during runs;
+they are labeled as completion hashes, not exact loaded-code provenance. The
+final runner captures both sources at startup and executes the captured extractor
+bytes. Its metadata identifies that policy explicitly.
 
 ## Candidate and implementation
 
