@@ -27,7 +27,7 @@ fn experimental_plugin_alignment_and_lifecycle() {
         .map(|b| f32::from_le_bytes(*b))
         .collect();
     assert_eq!(speech.len(), 48000 * 10);
-    for mode in [1.0, 2.0, 0.0] {
+    for mode in [0.0, 1.0, 2.0] {
         let input = if mode == 0.0 { &speech } else { &input };
         plugin.activate();
         let mut actual = Vec::new();
@@ -102,5 +102,55 @@ fn experimental_plugin_alignment_and_lifecycle() {
             );
         }
         plugin.deactivate();
+    }
+}
+
+#[test]
+#[ignore = "Requires local extraction assets; run this suite with --test-threads=1"]
+fn call_pressure_preserves_speech_through_ordinary_denoising() {
+    bridge_fault_preserves_speech("time.sleep(0.03)");
+}
+
+#[test]
+#[ignore = "Requires local extraction assets; run this suite with --test-threads=1"]
+fn dead_bridge_preserves_speech_through_ordinary_denoising() {
+    bridge_fault_preserves_speech("os._exit(0)");
+}
+
+fn bridge_fault_preserves_speech(fault: &str) {
+    let original = std::env::var_os("HUSHMIC_TSE_SCRIPT").unwrap();
+    let script =
+        std::env::temp_dir().join(format!("hushmic-call-pressure-{}.py", std::process::id()));
+    use std::io::Write;
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&script)
+        .unwrap();
+    file.write_all(
+        format!(
+            r#"import os, runpy, time
+module = runpy.run_path(os.environ["HUSHMIC_TSE_REAL_SCRIPT"])
+push = module["Stream"].push
+def slow_push(self, samples, mode=1):
+    if mode == 1:
+        {fault}
+    return push(self, samples, mode)
+module["Stream"].push = slow_push
+module["main"]()
+"#
+        )
+        .as_bytes(),
+    )
+    .unwrap();
+    drop(file);
+    std::env::set_var("HUSHMIC_TSE_REAL_SCRIPT", &original);
+    std::env::set_var("HUSHMIC_TSE_SCRIPT", &script);
+    let result = std::panic::catch_unwind(experimental_plugin_alignment_and_lifecycle);
+    std::env::set_var("HUSHMIC_TSE_SCRIPT", original);
+    std::env::remove_var("HUSHMIC_TSE_REAL_SCRIPT");
+    std::fs::remove_file(script).unwrap();
+    if let Err(panic) = result {
+        std::panic::resume_unwind(panic);
     }
 }

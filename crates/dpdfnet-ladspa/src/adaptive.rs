@@ -36,8 +36,13 @@ impl Default for RawDelay {
 
 impl RawDelay {
     pub fn new() -> RawDelay {
+        Self::with_delay(LATENCY_SAMPLES)
+    }
+
+    pub fn with_delay(samples: usize) -> RawDelay {
+        assert!(samples > 0);
         RawDelay {
-            buf: vec![0.0; LATENCY_SAMPLES],
+            buf: vec![0.0; samples],
             pos: 0,
         }
     }
@@ -47,7 +52,7 @@ impl RawDelay {
         self.pos = 0;
     }
 
-    /// `out[i]` is the input from `LATENCY_SAMPLES` samples ago.
+    /// `out[i]` is the input from the configured number of samples ago.
     pub fn process(&mut self, input: &[f32; HOP], out: &mut [f32; HOP]) {
         for (i, &x) in input.iter().enumerate() {
             out[i] = self.buf[self.pos];

@@ -104,8 +104,12 @@ a fixed 4,320-sample extraction delay, followed by DPDFNet’s 2,400-sample dela
 The worker adds another 2,400 samples at the supported 480-sample graph quantum:
 **9,120 samples / 190 ms**, reported to the graph and
 diagnostics. Late output is substituted with aligned silence by the existing
-ledger. A dead bridge, non-finite audio, invalid packet or response timeout
-reports extraction unavailable and emits silence until the chain is restarted.
+ledger. When the extractor falls behind by four overdue hops, its bridge dies, or a
+packet/read fails, extraction is marked unavailable and ordinary denoising
+continues. A warm 4,320-sample microphone delay preserves alignment through
+that fallback; mute remains silent and bypass remains aligned original audio.
+Non-finite microphone input emits silence. Extraction stays unavailable until
+the chain is restarted or extraction is toggled off and on.
 There is no automatic switch to a different speaker model. The app allows up to
 30 seconds for initial model loading; resets restore a saved primed state.
 
@@ -122,7 +126,7 @@ HUSHMIC_TSE_PYTHON="$PWD/target/voice-reference-evaluation/venv/bin/python" \
 HUSHMIC_TSE_SCRIPT="$PWD/scripts/experimental-live-extraction.py" \
 HUSHMIC_TSE_REFERENCE="$PWD/target/target-speaker-extraction/plugin-public-reference.bin" \
 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
-cargo test --release -p dpdfnet-ladspa --test extraction -- --ignored --nocapture
+cargo test --release -p dpdfnet-ladspa --test extraction -- --ignored --nocapture --test-threads=1
 ```
 
 The initial extraction-only plugin passed an active PipeWire startup smoke with a temporary
@@ -146,6 +150,13 @@ Runtime variability remains a limitation. This is one run
 under the current desktop load, not sustained-call validation. It does not
 repair weak speaker selection for every enrollment. The trial stays disabled
 until explicitly re-enabled; the existing extraction enrollment is retained.
+
+The next real-call trial muted the user after joining a call, although the
+preview worked. The saved log showed input-ring overflows and repeated resets.
+A public-fixture regression reproduced zero retained speech when each extractor
+hop was delayed by 30 ms. With the denoising fallback, retained source projection
+was 0.81 and the noise, bypass and mute checks passed. This verifies recovery
+from processing overload; it does not certify speaker selection or real calls.
 
 The reference in that command is generated from the separate public enrollment
 fixture, not from the microphone. These checks establish integration behavior,

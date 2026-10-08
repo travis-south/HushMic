@@ -4214,5 +4214,28 @@
       "input": "default fallback",
       "scope": "startup integration only; no call or microphone acoustic acceptance"
     }
+  },
+  "local_app_trial_call_feedback": {
+    "date": "2026-10-08",
+    "user_report": "Preview worked; after joining a real call, even solo speech stayed muted.",
+    "saved_log_evidence": [
+      "input ring overflow; restarting the stream",
+      "repeated latency announcements after stream resets"
+    ],
+    "reproduction": "Actual plugin and real INT8 extractor with public enrollment/audio; add 30 ms per extraction hop to model call-time contention.",
+    "red_retained_source_projection": 0,
+    "healthy_baseline_retained_source_projection_rounded": -0.66,
+    "fallback_retained_source_projection_rounded": 0.812,
+    "fallback_trigger_overdue_hops": 4,
+    "fallback_behavior": "Stop extraction for the current chain; keep a warm 4320-sample microphone delay and ordinary denoising. Mark extraction unavailable. Re-enable explicitly to retry.",
+    "checks": {
+      "call_pressure_regression": true,
+      "dead_bridge_regression": true,
+      "noise_only_reduction_at_least_40_db": true,
+      "bypass_aligned_after_failure": true,
+      "mute_silent_after_failure": true
+    },
+    "nominal_latency_samples": 9120,
+    "limits": "Controlled public-fixture failure recovery; actual call retest pending. Background speaker rejection is absent while ordinary denoising fallback is active. No claim that extraction is sustainable under call load or selects every enrolled voice correctly."
   }
 }

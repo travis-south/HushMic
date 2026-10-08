@@ -1,5 +1,5 @@
 //! Opt-in local experiment; all subprocess I/O stays on the existing worker.
-use crate::HopEngine;
+use crate::{HopEngine, RawDelay};
 use hushmic_denoiser::{Denoiser, Mode, HOP};
 use std::io::{self, Read, Write};
 use std::os::{fd::AsRawFd, unix::process::CommandExt};
@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 
 pub struct Extraction {
     denoiser: Denoiser,
+    raw: RawDelay,
     child: Child,
     input: ChildStdin,
     output: ChildStdout,
@@ -90,6 +91,7 @@ impl Extraction {
         let output = child.stdout.take().ok_or("Extraction output missing")?;
         let mut engine = Self {
             denoiser,
+            raw: RawDelay::with_delay(4320),
             child,
             input,
             output,
@@ -129,10 +131,19 @@ impl Extraction {
     fn fail(&mut self, reason: &str) {
         if !self.failed {
             crate::log::contract_line(&format!(
-                "protection: unavailable ({reason}; experimental output is silent)"
+                "protection: unavailable ({reason}; ordinary denoising continues)"
             ));
             let _ = self.child.kill();
             self.failed = true;
+            #[cfg(feature = "native")]
+            let engine = self.denoiser.engine().to_string();
+            #[cfg(not(feature = "native"))]
+            let engine = "onnx";
+            crate::log::contract_line(&crate::inference_line(
+                crate::model_name(&crate::model_path()),
+                &engine,
+                None,
+            ));
         }
     }
 }
@@ -147,13 +158,23 @@ impl Drop for Extraction {
 impl HopEngine for Extraction {
     fn process_hop(&mut self, input: &[f32; HOP], output: &mut [f32; HOP]) -> Result<(), String> {
         output.fill(0.0);
+        let mut raw = [0.0; HOP];
+        if input.iter().any(|v| !v.is_finite()) {
+            self.fail("Non-finite microphone audio");
+            self.raw.process(&[0.0; HOP], &mut raw);
+            let _ = self.denoiser.process_hop(&raw, output);
+            output.fill(0.0);
+            return Err("Non-finite microphone audio".into());
+        }
+        // Keep the fallback warm so dropping extraction does not change latency.
+        self.raw.process(input, &mut raw);
         if self.failed {
-            return Err("Extraction bridge unavailable".into());
+            return self
+                .denoiser
+                .process_hop(&raw, output)
+                .map_err(|e| e.to_string());
         }
         let result = (|| {
-            if input.iter().any(|v| !v.is_finite()) {
-                return Err(io::Error::other("Non-finite microphone audio"));
-            }
             let mode: u32 = match self.mode {
                 Mode::Process => 1,
                 Mode::Bypass => 2,
@@ -177,19 +198,20 @@ impl HopEngine for Extraction {
             if samples.iter().any(|v| !v.is_finite()) {
                 return Err(io::Error::other("Non-finite extraction output"));
             }
-            self.denoiser
-                .process_hop(&samples, output)
-                .map_err(|e| io::Error::other(e.to_string()))
+            Ok(samples)
         })();
-        result.map_err(|e: io::Error| {
-            output.fill(0.0);
+        let samples = result.unwrap_or_else(|e: io::Error| {
             self.fail(&e.to_string());
-            e.to_string()
-        })
+            raw
+        });
+        self.denoiser
+            .process_hop(&samples, output)
+            .map_err(|e| e.to_string())
     }
 
     fn reset(&mut self) {
         self.denoiser.reset();
+        self.raw.reset();
         if self.failed {
             return;
         }
@@ -221,6 +243,11 @@ impl HopEngine for Extraction {
     }
     fn set_attenuation_limit_db(&mut self, db: f32) {
         self.denoiser.set_attenuation_limit_db(db);
+    }
+    fn set_lag_hops(&mut self, hops: u32) {
+        if hops >= crate::ladder::LAG_PANIC {
+            self.fail("Extractor stream fell behind");
+        }
     }
     fn note_output_lead(&mut self, lead: usize) {
         if self.lead != lead {
