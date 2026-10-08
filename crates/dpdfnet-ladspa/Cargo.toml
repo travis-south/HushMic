@@ -24,4 +24,3 @@ libc = "0.2"
 
 [dev-dependencies]
 claxon = "0.4" # FLAC decode for the committed public parity fixture
-
