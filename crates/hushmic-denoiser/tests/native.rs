@@ -205,17 +205,19 @@ fn reset_and_fresh_instances_are_deterministic() {
         let Some(mp) = assets(model) else { return };
         let noisy = read_flac("noisy_keyboard_48k.flac");
         let clip = &noisy[..300 * HOP];
-        let mut d = Denoiser::from_file_with(&mp, Inference::NativeInt8).unwrap();
-        assert_eq!(d.engine(), Engine::NativeInt8);
-        let first = stream(&mut d, clip);
-        d.reset();
-        let again = stream(&mut d, clip);
-        let fresh = stream(
-            &mut Denoiser::from_file_with(&mp, Inference::NativeInt8).unwrap(),
-            clip,
-        );
-        assert_eq!(bits(&first), bits(&again), "{model}: reset");
+        // reset keeps the remembered talker, so compare two instances driven
+        // through the same stream -> reset -> stream sequence
+        let run = || {
+            let mut d = Denoiser::from_file_with(&mp, Inference::NativeInt8).unwrap();
+            assert_eq!(d.engine(), Engine::NativeInt8);
+            let first = stream(&mut d, clip);
+            d.reset();
+            (first, stream(&mut d, clip))
+        };
+        let (first, again) = run();
+        let (fresh, fresh_again) = run();
         assert_eq!(bits(&first), bits(&fresh), "{model}: fresh");
+        assert_eq!(bits(&again), bits(&fresh_again), "{model}: reset");
     }
 }
 
