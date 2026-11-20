@@ -130,10 +130,10 @@ impl Denoiser {
     }
 
     /// Clear all stream state (STFT rings, recurrent model state, ramps) for
-    /// a fresh session, then put back the remembered talker so a restart does
-    /// not let another voice in. Configuration survives: the current [`Mode`] and
-    /// attenuation limit stay in force — in particular, a `Denoiser` reset
-    /// while muted stays silent from the very first sample.
+    /// a fresh session, then put back the last talker's model memory so a
+    /// restart keeps favouring that voice. Configuration survives: the current
+    /// [`Mode`] and attenuation limit stay in force — in particular, a
+    /// `Denoiser` reset while muted stays silent from the very first sample.
     pub fn reset(&mut self) {
         self.analysis.reset();
         self.synthesis.reset();
