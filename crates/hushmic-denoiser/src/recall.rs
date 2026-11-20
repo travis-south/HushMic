@@ -48,7 +48,7 @@ impl Recall {
 
     /// Call with the freshly initialised state: puts the remembered talker back.
     pub(crate) fn reset(&mut self, state: &mut [f32]) {
-        if self.has_snapshot && state.len() == self.snapshot.len() + OUTPUT_TAIL {
+        if self.has_snapshot {
             state[..self.snapshot.len()].copy_from_slice(&self.snapshot);
         }
         self.quiet_hops = 0;
