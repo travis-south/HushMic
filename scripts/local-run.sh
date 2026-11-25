@@ -33,7 +33,8 @@ if pgrep -x hushmic >/dev/null; then
 fi
 
 unset HUSHMIC_INFERENCE  # an inherited "onnx" would override auto
-setsid -f "$P/bin/hushmic" --tray >"$LOG" 2>&1
+# Own scope: in the caller's cgroup it dies when that session ends (e.g. an agent's scope is stopped).
+systemd-run --user --scope --quiet setsid -f "$P/bin/hushmic" --tray >"$LOG" 2>&1
 echo "started $P/bin/hushmic --tray (log: $LOG)"
 
 # The engine is reported once the plugin processes audio: hold the source open briefly to wake it.
