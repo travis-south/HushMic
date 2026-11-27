@@ -945,7 +945,7 @@ mod tests {
         assert!(plain.contains("tray = true\n"), "{plain}");
         assert!(plain.contains("tray_icon = auto\n"), "{plain}");
         assert!(plain.contains("inference = auto\n"), "{plain}");
-        assert!(plain.contains("voice_hold = false\n"), "{plain}");
+        assert!(plain.contains("voice_hold = true\n"), "{plain}");
         assert!(plain.contains("attn_limit = 100\n"), "{plain}");
         assert!(plain.contains("mic_prefs = (none)\n"), "{plain}");
         let v: serde_json::Value = serde_json::from_str(&render_all_json(&c, None)).unwrap();
@@ -956,7 +956,7 @@ mod tests {
         assert_eq!(v["tray"], true);
         assert_eq!(v["tray_icon"], "auto");
         assert_eq!(v["inference"], "auto");
-        assert_eq!(v["voice_hold"], false);
+        assert_eq!(v["voice_hold"], true);
         assert!(v["mic_prefs"].is_object());
         let one: serde_json::Value =
             serde_json::from_str(&render_one_json(&c, Key::Model, None)).unwrap();
@@ -1011,12 +1011,12 @@ mod tests {
         let d = diff(&a, &b);
         assert!(d.chain && !d.autostart && !d.notifications);
         let mut h = a.clone();
-        apply(&mut h, Key::VoiceHold, Value::Bool(true), None);
+        apply(&mut h, Key::VoiceHold, Value::Bool(false), None);
         assert!(
-            h.voice_hold && diff(&a, &h).chain,
+            !h.voice_hold && diff(&a, &h).chain,
             "the chain restarts for it"
         );
-        assert_eq!(get(&h, Key::VoiceHold, None), "true");
+        assert_eq!(get(&h, Key::VoiceHold, None), "false");
         let mut c = a.clone();
         c.autostart = true;
         c.notifications = false;

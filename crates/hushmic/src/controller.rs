@@ -2470,7 +2470,7 @@ mod tests {
             },
             // the plugin reads the voice hold when it is instantiated
             Config {
-                voice_hold: true,
+                voice_hold: false,
                 ..a.clone()
             },
         ] {

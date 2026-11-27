@@ -249,9 +249,9 @@ pub struct Config {
     #[serde(skip_serializing_if = "Inference::is_default")]
     pub inference: Inference,
     /// Keep to the talker's voice: voices farther from the microphone stay
-    /// out, also after a pause (the plugin's voice hold, issue #34). Skipped
-    /// while false so existing files stay byte-identical.
-    #[serde(skip_serializing_if = "is_false")]
+    /// out, also after a pause (the plugin's voice hold, issue #34). On by
+    /// default; written only when false, like `tray`.
+    #[serde(skip_serializing_if = "is_true")]
     pub voice_hold: bool,
     /// The window's colours. Skipped while `system` so existing files stay
     /// byte-identical.
@@ -308,10 +308,6 @@ fn is_true(b: &bool) -> bool {
     *b
 }
 
-fn is_false(b: &bool) -> bool {
-    !*b
-}
-
 /// Read `hidden_notices` entry by entry: a hand-edited entry without an
 /// app (or of the wrong type) is dropped, the rest of the file stays.
 fn lenient_notices<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Vec<HiddenNotice>, D::Error> {
@@ -349,7 +345,7 @@ impl Default for Config {
             notifications: true,
             tray_icon: TrayIcon::Auto,
             inference: Inference::Auto,
-            voice_hold: false,
+            voice_hold: true,
             appearance: Appearance::System,
             hidden_notices: Vec::new(),
             files_folder: None,
@@ -942,20 +938,20 @@ mod tests {
     }
 
     #[test]
-    fn voice_hold_defaults_to_off_and_stays_absent_until_on() {
+    fn voice_hold_defaults_to_on_and_stays_absent_until_off() {
         let d = Config::default();
-        assert!(!d.voice_hold);
+        assert!(d.voice_hold);
         assert!(!toml::to_string_pretty(&d).unwrap().contains("voice_hold"));
-        let on = Config {
-            voice_hold: true,
+        let off = Config {
+            voice_hold: false,
             ..Config::default()
         };
-        let s = toml::to_string_pretty(&on).unwrap();
-        assert!(s.contains("voice_hold = true"), "{s}");
-        assert!(toml::from_str::<Config>(&s).unwrap().voice_hold);
+        let s = toml::to_string_pretty(&off).unwrap();
+        assert!(s.contains("voice_hold = false"), "{s}");
+        assert!(!toml::from_str::<Config>(&s).unwrap().voice_hold);
         // a file from before the key
         assert!(
-            !toml::from_str::<Config>("enabled = true\n")
+            toml::from_str::<Config>("enabled = true\n")
                 .unwrap()
                 .voice_hold
         );
