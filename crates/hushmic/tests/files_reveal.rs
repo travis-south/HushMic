@@ -56,7 +56,15 @@ fn the_file_manager_shows_the_file_else_the_portal_its_folder() {
         return;
     }
     let mut daemon = Command::new("dbus-daemon")
-        .args(["--session", "--nofork", "--print-address=1"])
+        .args([
+            "--config-file",
+            concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/fixtures/private-bus.conf"
+            ),
+            "--nofork",
+            "--print-address=1",
+        ])
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .spawn()
